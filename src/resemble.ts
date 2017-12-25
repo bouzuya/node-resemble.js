@@ -12,7 +12,6 @@ import {
   PixelWithBrightnessInfo
 } from './type/pixel';
 import { Rectangle } from './type/rectangle';
-import { Resemble } from './type/resemble';
 import { ResembleOptions } from './type/resemble-options';
 import { Result } from './type/result';
 import { getBrightness } from './get-brightness';
@@ -20,8 +19,6 @@ import { loadImageData } from './load-image-data';
 import { parseImage } from './parse-image';
 
 const { PNG } = png;
-
-var _this: { resemble: Resemble; } = {} as any;
 
 var pixelTransparency = 1;
 
@@ -54,9 +51,7 @@ var errorPixelTransform = {
 var errorPixelTransformer: (p1: Pixel, p2: Pixel) => Pixel = errorPixelTransform.flat;
 var largeImageThreshold = 1200;
 
-_this['resemble'] = function (file: File, options?: ResembleOptions): {
-  compareTo: (secondFile: File) => CompareApi;
-} {
+const compareImages = (file: File, secondFile: File, options?: ResembleOptions): CompareApi => {
   // options start
   var key: keyof Color;
   var opts = options || {};
@@ -516,13 +511,10 @@ _this['resemble'] = function (file: File, options?: ResembleOptions): {
     return self;
   }
 
-  return {
-    compareTo: function (secondFile) {
-      return getCompareApi(secondFile);
-    }
-  };
+  return getCompareApi(secondFile);
 };
 
-module.exports = _this['resemble']
-
-export { parseImage };
+export {
+  compareImages,
+  parseImage
+};
