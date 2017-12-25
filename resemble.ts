@@ -152,12 +152,11 @@ _this['resemble'] = function (fileData: FileData): {
     }
   }
 
-  function loop(x: number, y: number, callback: (x: number, y: number) => void): void {
-    var i, j;
-
-    for (i = 0; i < x; i++) {
-      for (j = 0; j < y; j++) {
-        callback(i, j);
+  function loop(height: number, width: number, callback: (y: number, x: number) => void): void {
+    var y, x;
+    for (y = 0; y < height; y++) {
+      for (x = 0; x < width; x++) {
+        callback(y, x);
       }
     }
   }
@@ -170,8 +169,8 @@ _this['resemble'] = function (fileData: FileData): {
     var blueTotal = 0;
     var brightnessTotal = 0;
 
-    loop(height, width, function (verticalPos, horizontalPos) {
-      var offset = (verticalPos * width + horizontalPos) * 4;
+    loop(height, width, function (y, x) {
+      var offset = (y * width + x) * 4;
       var red = sourceImageData[offset];
       var green = sourceImageData[offset + 1];
       var blue = sourceImageData[offset + 2];
@@ -293,7 +292,7 @@ _this['resemble'] = function (fileData: FileData): {
     return h;
   }
 
-  function isAntialiased(sourcePix: PixelWithBrightnessInfo, data: Buffer, cacheSet: 1 | 2, verticalPos: number, horizontalPos: number, width: number): boolean {
+  function isAntialiased(sourcePix: PixelWithBrightnessInfo, data: Buffer, cacheSet: 1 | 2, y: number, x: number, width: number): boolean {
     var offset;
     var targetPix;
     var distance = 1;
@@ -312,7 +311,7 @@ _this['resemble'] = function (fileData: FileData): {
           // ignore source pixel
         } else {
 
-          offset = ((verticalPos + j) * width + (horizontalPos + i)) * 4;
+          offset = ((y + j) * width + (x + i)) * 4;
           targetPix = getPixelInfo(data, offset, cacheSet);
 
           if (targetPix === null) {
@@ -435,12 +434,12 @@ _this['resemble'] = function (fileData: FileData): {
       skip = 6;
     }
 
-    loop(height, width, function (verticalPos, horizontalPos) {
+    loop(height, width, function (y, x) {
 
-      var offset = (verticalPos * width + horizontalPos) * 4;
+      var offset = (y * width + x) * 4;
 
       if (skip) { // only skip if the image isn't small
-        if (verticalPos % skip === 0 || horizontalPos % skip === 0) {
+        if (y % skip === 0 || x % skip === 0) {
 
           copyPixel(targetPix, offset, { // ? { r: 0, b: 0, g: 0, a: 0 }
             red: 0,
@@ -463,12 +462,12 @@ _this['resemble'] = function (fileData: FileData): {
       if (ignoreRectangles) {
         for (rectagnlesIdx = 0; rectagnlesIdx < ignoreRectangles.length; rectagnlesIdx++) {
           currentRectangle = ignoreRectangles[rectagnlesIdx];
-          //console.log(currentRectangle, verticalPos, horizontalPos);
+          //console.log(currentRectangle, y, x);
           if (
-            (verticalPos >= currentRectangle[1]) &&
-            (verticalPos < currentRectangle[1] + currentRectangle[3]) &&
-            (horizontalPos >= currentRectangle[0]) &&
-            (horizontalPos < currentRectangle[0] + currentRectangle[2])
+            (y >= currentRectangle[1]) &&
+            (y < currentRectangle[1] + currentRectangle[3]) &&
+            (x >= currentRectangle[0]) &&
+            (x < currentRectangle[0] + currentRectangle[2])
           ) {
             copyGrayScalePixel(targetPix, offset, pixel2); // ? pixel2.brightness is not defined
             //copyPixel(targetPix, offset, pixel1, pixel2);
@@ -497,8 +496,8 @@ _this['resemble'] = function (fileData: FileData): {
       } else if (ignoreAntialiasing && (
         addBrightnessInfo(pixel1), // jit pixel info augmentation looks a little weird, sorry.
         addBrightnessInfo(pixel2),
-        isAntialiased(pixel1 as PixelWithBrightnessInfo, data1, 1, verticalPos, horizontalPos, width) ||
-        isAntialiased(pixel2 as PixelWithBrightnessInfo, data2, 2, verticalPos, horizontalPos, width)
+        isAntialiased(pixel1 as PixelWithBrightnessInfo, data1, 1, y, x, width) ||
+        isAntialiased(pixel2 as PixelWithBrightnessInfo, data2, 2, y, x, width)
       )) {
 
         if (isPixelBrightnessSimilar(pixel1 as PixelWithBrightnessInfo, pixel2 as PixelWithBrightnessInfo)) {
