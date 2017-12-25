@@ -18,38 +18,38 @@ import { parseImage } from './parse-image';
 
 const { PNG } = png;
 
-var pixelTransparency = 1;
-
-var errorPixelColor: Color = { // Color for Error Pixels. Between 0 and 255.
-  red: 255,
-  green: 0,
-  blue: 255,
-  alpha: 255
-};
-
-var errorPixelTransform = {
-  flat: function (_p1: Pixel, _p2: Pixel): Pixel {
-    return {
-      r: errorPixelColor.red,
-      g: errorPixelColor.green,
-      b: errorPixelColor.blue,
-      a: errorPixelColor.alpha
-    }
-  },
-  movement: function (_p1: Pixel, p2: Pixel): Pixel {
-    return {
-      r: ((p2.r * (errorPixelColor.red / 255)) + errorPixelColor.red) / 2,
-      g: ((p2.g * (errorPixelColor.green / 255)) + errorPixelColor.green) / 2,
-      b: ((p2.b * (errorPixelColor.blue / 255)) + errorPixelColor.blue) / 2,
-      a: p2.a
-    }
-  }
-};
-
-var errorPixelTransformer: (p1: Pixel, p2: Pixel) => Pixel = errorPixelTransform.flat;
-var largeImageThreshold = 1200;
-
 const compareImages = (file: File, secondFile: File, options?: ResembleOptions): CompareApi => {
+  var pixelTransparency = 1;
+
+  var errorPixelColor: Color = { // Color for Error Pixels. Between 0 and 255.
+    red: 255,
+    green: 0,
+    blue: 255,
+    alpha: 255
+  };
+
+  var errorPixelTransform = {
+    flat: function (_p1: Pixel, _p2: Pixel): Pixel {
+      return {
+        r: errorPixelColor.red,
+        g: errorPixelColor.green,
+        b: errorPixelColor.blue,
+        a: errorPixelColor.alpha
+      }
+    },
+    movement: function (_p1: Pixel, p2: Pixel): Pixel {
+      return {
+        r: ((p2.r * (errorPixelColor.red / 255)) + errorPixelColor.red) / 2,
+        g: ((p2.g * (errorPixelColor.green / 255)) + errorPixelColor.green) / 2,
+        b: ((p2.b * (errorPixelColor.blue / 255)) + errorPixelColor.blue) / 2,
+        a: p2.a
+      }
+    }
+  };
+
+  var errorPixelTransformer: (p1: Pixel, p2: Pixel) => Pixel = errorPixelTransform.flat;
+  var largeImageThreshold = 1200;
+
   // options start
   var key: keyof Color;
   var opts = options || {};
