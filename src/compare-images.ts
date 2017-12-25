@@ -52,9 +52,10 @@ const compareImages = (file: File, secondFile: File, options?: ResembleOptions):
   var opts = options || {};
   if (opts.errorColor) {
     for (key in opts.errorColor) {
-      errorPixelColor[key] = typeof opts.errorColor[key] === 'undefined'
+      let color = opts.errorColor[key];
+      errorPixelColor[key] = typeof color === 'undefined'
         ? errorPixelColor[key]
-        : opts.errorColor[key];
+        : color;
     }
   }
   if (opts.errorType && errorPixelTransform[opts.errorType]) {
@@ -65,8 +66,6 @@ const compareImages = (file: File, secondFile: File, options?: ResembleOptions):
     largeImageThreshold = opts.largeImageThreshold;
   }
   // options end
-
-  var result: Partial<Result> = {};
 
   var tolerance = { // between 0 and 255
     red: 16,
@@ -274,7 +273,7 @@ const compareImages = (file: File, secondFile: File, options?: ResembleOptions):
     (p as PixelWithBrightnessAndHueInfo).h = getHue(p.r, p.g, p.b);
   }
 
-  function analyseImages(image1: Image, image2: Image, width: number, height: number): void {
+  function analyseImages(image1: Image, image2: Image, width: number, height: number): Result {
 
     var imageData1 = image1.data;
     var imageData2 = image2.data;
@@ -380,20 +379,25 @@ const compareImages = (file: File, secondFile: File, options?: ResembleOptions):
 
     });
 
-    result.rawMisMatchPercentage = (mismatchCount / (height * width) * 100);
-    result.misMatchPercentage = result.rawMisMatchPercentage.toFixed(2);
-    result.analysisTime = Date.now() - time;
-
-    result.getDiffImage = function (_text) {
-      return image;
-    };
-
-    result.getDiffImageAsJPEG = function (quality) {
-      return jpeg.encode({
-        data: targetPix,
-        width: image1.width,
-        height: image1.height
-      }, typeof quality !== 'undefined' ? quality : 50).data;
+    const rawMisMatchPercentage = (mismatchCount / (height * width) * 100);
+    return {
+      isSameDimensions:
+        image1.width === image2.width && image1.height === image2.height,
+      dimensionDifference: {
+        width: image1.width - image2.width,
+        height: image1.height - image2.height
+      },
+      rawMisMatchPercentage,
+      misMatchPercentage: rawMisMatchPercentage.toFixed(2),
+      analysisTime: Date.now() - time,
+      getDiffImage: function (_text) { return image; },
+      getDiffImageAsJPEG: function (quality) {
+        return jpeg.encode({
+          data: targetPix,
+          width: image1.width,
+          height: image1.height
+        }, typeof quality !== 'undefined' ? quality : 50).data;
+      }
     };
   }
 
@@ -403,15 +407,8 @@ const compareImages = (file: File, secondFile: File, options?: ResembleOptions):
       .then(([image1, image2]: [Image, Image]) => {
         var width = image1.width > image2.width ? image1.width : image2.width;
         var height = image1.height > image2.height ? image1.height : image2.height;
-        result.isSameDimensions =
-          image1.width === image2.width && image1.height === image2.height;
-        result.dimensionDifference = {
-          width: image1.width - image2.width,
-          height: image1.height - image2.height
-        };
         //lksv: normalization removed
-        analyseImages(image1, image2, width, height);
-        return result as Result;
+        return analyseImages(image1, image2, width, height);
       });
   }
 
