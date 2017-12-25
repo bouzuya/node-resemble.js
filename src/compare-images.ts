@@ -11,11 +11,11 @@ import {
 } from './type/pixel';
 import { Rectangle } from './type/rectangle';
 import { ResembleOptions } from './type/resemble-options';
-import { Result } from './type/result';
+import { CompareResult } from './type/compare-result';
 import { getBrightness } from './get-brightness';
 import { loadImageData } from './load-image-data';
 
-const compareImages = (file: File, secondFile: File, options?: ResembleOptions): Promise<Result> => {
+const compareImages = (file: File, secondFile: File, options?: ResembleOptions): Promise<CompareResult> => {
   var pixelTransparency = 1;
 
   var errorPixelColor: Color = { // Color for Error Pixels. Between 0 and 255.
@@ -273,7 +273,7 @@ const compareImages = (file: File, secondFile: File, options?: ResembleOptions):
     (p as PixelWithBrightnessAndHueInfo).h = getHue(p.r, p.g, p.b);
   }
 
-  function analyseImages(image1: Image, image2: Image, width: number, height: number): Result {
+  function analyseImages(image1: Image, image2: Image, width: number, height: number): CompareResult {
 
     var imageData1 = image1.data;
     var imageData2 = image2.data;
@@ -401,7 +401,7 @@ const compareImages = (file: File, secondFile: File, options?: ResembleOptions):
     };
   }
 
-  function compare(one: File, two: File): Promise<Result> {
+  function compare(one: File, two: File): Promise<CompareResult> {
     return Promise
       .all([loadImageData(one), loadImageData(two)])
       .then(([image1, image2]: [Image, Image]) => {
