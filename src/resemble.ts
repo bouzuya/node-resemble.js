@@ -1,90 +1,23 @@
 import * as fs from 'fs';
 import jpeg = require('jpeg-js');
 import png = require('pngjs');
+import { Byte } from './type/byte';
+import { Color } from './type/color';
+import { CompareApi } from './type/compare-api';
+import { CompleteCallback } from './type/complete-callback';
+import { File } from './type/file';
+import { Image } from './type/image';
+import {
+  Pixel,
+  PixelWithBrightnessAndHueInfo,
+  PixelWithBrightnessInfo
+} from './type/pixel';
+import { Rectangle } from './type/rectangle';
+import { Resemble } from './type/resemble';
+import { ResembleOptions } from './type/resemble-options';
+import { Result } from './type/result';
 
 const { PNG } = png;
-
-interface ResembleOptions {
-  errorColor?: Partial<Color>;
-  errorType?: 'flat' | 'movement';
-  largeImageThreshold?: number;
-  transparency?: number;
-}
-
-interface Pixel {
-  r: Byte;
-  g: Byte;
-  b: Byte;
-  a: Byte;
-}
-
-interface BrightnessInfo {
-  brightness: number;
-}
-
-interface HueInfo {
-  h: number;
-}
-
-type PixelWithBrightnessInfo = Pixel & BrightnessInfo;
-type PixelWithBrightnessAndHueInfo = Pixel & BrightnessInfo & HueInfo;
-
-interface ErrorPixelTransformer {
-  (p1: Pixel, p2: Pixel): Pixel;
-}
-
-interface Image {
-  data: Buffer;
-  height: number;
-  width: number;
-  deflateChunkSize?: number; // ?
-  deflateLevel?: number; // ?
-  deflateStrategy?: number; // ?
-}
-
-interface Color {
-  red: Byte;
-  green: Byte;
-  blue: Byte;
-  alpha: Byte;
-}
-
-type File = string | Buffer;
-type Byte = number;
-interface Result {
-  red: number;
-  green: number;
-  blue: number;
-  brightness: number;
-  rawMisMatchPercentage: number;
-  misMatchPercentage: string;
-  analysisTime: number;
-  getDiffImage: (_text: any) => png.PNG;
-  getDiffImageAsJPEG: (quality?: number) => Buffer;
-  isSameDimensions: boolean;
-  dimensionDifference: {
-    width: number;
-    height: number;
-  };
-};
-type CompleteCallback = (data: Result) => void;
-type Rectangle = [number, number, number, number]; // (x, y, width, height)
-
-interface CompareApi {
-  ignoreAntialiasing: () => CompareApi;
-  ignoreColors: () => CompareApi;
-  ignoreNothing: () => CompareApi;
-  ignoreRectangles: (rectangles: Rectangle[]) => CompareApi;
-  onComplete: (callback: CompleteCallback) => CompareApi;
-  repaint: () => CompareApi;
-}
-
-interface Resemble {
-  (file: File): {
-    compareTo: (secondFile: File) => CompareApi;
-    onComplete: (callback: CompleteCallback) => void;
-  };
-}
 
 var _this: { resemble: Resemble; } = {} as any;
 
@@ -116,7 +49,7 @@ var errorPixelTransform = {
   }
 };
 
-var errorPixelTransformer: ErrorPixelTransformer = errorPixelTransform.flat;
+var errorPixelTransformer: (p1: Pixel, p2: Pixel) => Pixel = errorPixelTransform.flat;
 var largeImageThreshold = 1200;
 
 _this['resemble'] = function (file: File, options?: ResembleOptions): {
