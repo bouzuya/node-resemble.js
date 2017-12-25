@@ -30,7 +30,7 @@ type PixelWithBrightnessInfo = Pixel & BrightnessInfo;
 type PixelWithBrightnessAndHueInfo = Pixel & BrightnessInfo & HueInfo;
 
 interface ErrorPixelTransformer {
-  (d1: Pixel, d2: Pixel): { r: Byte; g: Byte; b: Byte; a: Byte; };
+  (p1: Pixel, p2: Pixel): Pixel;
 }
 
 interface Image {
@@ -99,7 +99,7 @@ var errorPixelColor: Color = { // Color for Error Pixels. Between 0 and 255.
 };
 
 var errorPixelTransform = {
-  flat: function (_d1: Pixel, _d2: Pixel) {
+  flat: function (_p1: Pixel, _p2: Pixel): Pixel {
     return {
       r: errorPixelColor.red,
       g: errorPixelColor.green,
@@ -107,12 +107,12 @@ var errorPixelTransform = {
       a: errorPixelColor.alpha
     }
   },
-  movement: function (_d1: Pixel, d2: Pixel) {
+  movement: function (_p1: Pixel, p2: Pixel): Pixel {
     return {
-      r: ((d2.r * (errorPixelColor.red / 255)) + errorPixelColor.red) / 2,
-      g: ((d2.g * (errorPixelColor.green / 255)) + errorPixelColor.green) / 2,
-      b: ((d2.b * (errorPixelColor.blue / 255)) + errorPixelColor.blue) / 2,
-      a: d2.a
+      r: ((p2.r * (errorPixelColor.red / 255)) + errorPixelColor.red) / 2,
+      g: ((p2.g * (errorPixelColor.green / 255)) + errorPixelColor.green) / 2,
+      b: ((p2.b * (errorPixelColor.blue / 255)) + errorPixelColor.blue) / 2,
+      a: p2.a
     }
   }
 };
@@ -237,9 +237,9 @@ _this['resemble'] = function (fileData: FileData): {
     }
   }
 
-  function isPixelBrightnessSimilar(d1: PixelWithBrightnessInfo, d2: PixelWithBrightnessInfo): boolean {
-    var alpha = isColorSimilar(d1.a, d2.a, 'alpha');
-    var brightness = isColorSimilar(d1.brightness, d2.brightness, 'minBrightness');
+  function isPixelBrightnessSimilar(p1: PixelWithBrightnessInfo, p2: PixelWithBrightnessInfo): boolean {
+    var alpha = isColorSimilar(p1.a, p2.a, 'alpha');
+    var brightness = isColorSimilar(p1.brightness, p2.brightness, 'minBrightness');
     return brightness && alpha;
   }
 
@@ -247,24 +247,24 @@ _this['resemble'] = function (fileData: FileData): {
     return 0.3 * r + 0.59 * g + 0.11 * b;
   }
 
-  function isRGBSame(d1: Pixel, d2: Pixel) {
-    var red = d1.r === d2.r;
-    var green = d1.g === d2.g;
-    var blue = d1.b === d2.b;
+  function isRGBSame(p1: Pixel, p2: Pixel) {
+    var red = p1.r === p2.r;
+    var green = p1.g === p2.g;
+    var blue = p1.b === p2.b;
     return red && green && blue;
   }
 
-  function isRGBSimilar(d1: Pixel, d2: Pixel): boolean {
-    var red = isColorSimilar(d1.r, d2.r, 'red');
-    var green = isColorSimilar(d1.g, d2.g, 'green');
-    var blue = isColorSimilar(d1.b, d2.b, 'blue');
-    var alpha = isColorSimilar(d1.a, d2.a, 'alpha');
+  function isRGBSimilar(p1: Pixel, p2: Pixel): boolean {
+    var red = isColorSimilar(p1.r, p2.r, 'red');
+    var green = isColorSimilar(p1.g, p2.g, 'green');
+    var blue = isColorSimilar(p1.b, p2.b, 'blue');
+    var alpha = isColorSimilar(p1.a, p2.a, 'alpha');
 
     return red && green && blue && alpha;
   }
 
-  function isContrasting(d1: PixelWithBrightnessInfo, d2: PixelWithBrightnessInfo): boolean {
-    return Math.abs(d1.brightness - d2.brightness) > tolerance.maxBrightness;
+  function isContrasting(p1: PixelWithBrightnessInfo, p2: PixelWithBrightnessInfo): boolean {
+    return Math.abs(p1.brightness - p2.brightness) > tolerance.maxBrightness;
   }
 
   function getHue(r: Byte, g: Byte, b: Byte): number { // Pixel['h']
@@ -347,27 +347,27 @@ _this['resemble'] = function (fileData: FileData): {
     return false;
   }
 
-  function errorPixel(px: Buffer, offset: number, data1: Pixel, data2: Pixel): void {
-    var data = errorPixelTransformer(data1, data2);
+  function errorPixel(px: Buffer, offset: number, p1: Pixel, p2: Pixel): void {
+    var data = errorPixelTransformer(p1, p2);
     px[offset] = data.r;
     px[offset + 1] = data.g;
     px[offset + 2] = data.b;
     px[offset + 3] = data.a;
   }
 
-  // ? copyPixel(px: Buffer, offset: number, data: Pixel, data2: Pixel): void
-  function copyPixel(px: Buffer, offset: number, data: Pixel): void {
-    px[offset] = data.r; //r
-    px[offset + 1] = data.g; //g
-    px[offset + 2] = data.b; //b
-    px[offset + 3] = data.a * pixelTransparency; //a
+  // ? copyPixel(px: Buffer, offset: number, p1: Pixel, p2: Pixel): void
+  function copyPixel(px: Buffer, offset: number, p1: Pixel): void {
+    px[offset] = p1.r; //r
+    px[offset + 1] = p1.g; //g
+    px[offset + 2] = p1.b; //b
+    px[offset + 3] = p1.a * pixelTransparency; //a
   }
 
-  function copyGrayScalePixel(px: Buffer, offset: number, data: Pixel): void {
-    px[offset] = data.brightness; //r
-    px[offset + 1] = data.brightness; //g
-    px[offset + 2] = data.brightness; //b
-    px[offset + 3] = data.a * pixelTransparency; //a
+  function copyGrayScalePixel(px: Buffer, offset: number, p: Pixel): void {
+    px[offset] = p.brightness; //r
+    px[offset + 1] = p.brightness; //g
+    px[offset + 2] = p.brightness; //b
+    px[offset + 3] = p.a * pixelTransparency; //a
   }
 
   function getPixelInfo(data: Buffer, offset: number, _cacheSet: 1 | 2): Pixel | null {
@@ -397,13 +397,13 @@ _this['resemble'] = function (fileData: FileData): {
   }
 
   // convert Pixel to PixelWithBrightnessInfo
-  function addBrightnessInfo(data: Pixel): void {
-    (data as PixelWithBrightnessInfo).brightness = getBrightness(data.r, data.g, data.b); // 'corrected' lightness
+  function addBrightnessInfo(p: Pixel): void {
+    (p as PixelWithBrightnessInfo).brightness = getBrightness(p.r, p.g, p.b); // 'corrected' lightness
   }
 
   // convert PixelWithBrightnessInfo to PixelWithBrightnessAndHueInfo
-  function addHueInfo(data: PixelWithBrightnessInfo): void {
-    (data as PixelWithBrightnessAndHueInfo).h = getHue(data.r, data.g, data.b);
+  function addHueInfo(p: PixelWithBrightnessInfo): void {
+    (p as PixelWithBrightnessAndHueInfo).h = getHue(p.r, p.g, p.b);
   }
 
   function analyseImages(img1: Image, img2: Image, width: number, height: number): void {
