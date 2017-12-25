@@ -59,7 +59,7 @@ interface CompleteData {
   rawMisMatchPercentage: number;
   misMatchPercentage: string;
   analysisTime: number;
-  getDiffImage: (_text: any) => png.PNG;// imgd
+  getDiffImage: (_text: any) => png.PNG;
   getDiffImageAsJPEG: (quality?: number) => Buffer;
   isSameDimensions: boolean;
   dimensionDifference: {
@@ -267,8 +267,7 @@ _this['resemble'] = function (fileData: FileData): {
     return Math.abs(p1.brightness - p2.brightness) > tolerance.maxBrightness;
   }
 
-  function getHue(r: Byte, g: Byte, b: Byte): number { // Pixel['h']
-
+  function getHue(r: Byte, g: Byte, b: Byte): number {
     r = r / 255;
     g = g / 255;
     b = b / 255;
