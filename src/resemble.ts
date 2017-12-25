@@ -15,6 +15,7 @@ import { Rectangle } from './type/rectangle';
 import { Resemble } from './type/resemble';
 import { ResembleOptions } from './type/resemble-options';
 import { Result } from './type/result';
+import { getBrightness } from './get-brightness';
 import { loadImageData } from './load-image-data';
 
 const { PNG } = png;
@@ -165,10 +166,6 @@ _this['resemble'] = function (file: File, options?: ResembleOptions): {
     var alpha = isColorSimilar(p1.a, p2.a, 'alpha');
     var brightness = isColorSimilar(p1.brightness, p2.brightness, 'minBrightness');
     return brightness && alpha;
-  }
-
-  function getBrightness(r: Byte, g: Byte, b: Byte): number {
-    return 0.3 * r + 0.59 * g + 0.11 * b;
   }
 
   function isRGBSame(p1: Pixel, p2: Pixel) {
