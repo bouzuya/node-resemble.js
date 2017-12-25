@@ -238,10 +238,6 @@ _this['resemble'] = function (fileData: FileData): {
     }
   }
 
-  function isNumber(n: string): boolean {
-    return !isNaN(parseFloat(n));
-  }
-
   function isPixelBrightnessSimilar(d1: PixelWithBrightnessInfo, d2: PixelWithBrightnessInfo): boolean {
     var alpha = isColorSimilar(d1.a, d2.a, 'alpha');
     var brightness = isColorSimilar(d1.brightness, d2.brightness, 'minBrightness');
