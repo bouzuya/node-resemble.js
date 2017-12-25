@@ -526,7 +526,7 @@ _this['resemble'] = function (fileData: FileData): {
         data: targetPix,
         width: img1.width,
         height: img1.height
-      }, quality !== undefined ? quality : 50).data;
+      }, typeof quality !== 'undefined' ? quality : 50).data;
     };
   }
 
@@ -657,11 +657,10 @@ _this['resemble'] = function (fileData: FileData): {
 
 _this['resemble'].outputSettings = function (options: ResembleOptions): Resemble {
   var key: keyof Color;
-  var undefined;
 
   if (options.errorColor) {
     for (key in options.errorColor) {
-      errorPixelColor[key] = options.errorColor[key] === undefined ? errorPixelColor[key] : options.errorColor[key];
+      errorPixelColor[key] = typeof options.errorColor[key] === 'undefined' ? errorPixelColor[key] : options.errorColor[key];
     }
   }
 
@@ -671,7 +670,7 @@ _this['resemble'].outputSettings = function (options: ResembleOptions): Resemble
 
   pixelTransparency = options.transparency || pixelTransparency;
 
-  if (options.largeImageThreshold !== undefined) {
+  if (typeof options.largeImageThreshold !== 'undefined') {
     largeImageThreshold = options.largeImageThreshold;
   }
 
