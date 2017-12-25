@@ -2,8 +2,6 @@ import jpeg = require('jpeg-js');
 import png = require('pngjs');
 import { Byte } from './type/byte';
 import { Color } from './type/color';
-import { CompareApi } from './type/compare-api';
-import { CompleteCallback } from './type/complete-callback';
 import { File } from './type/file';
 import { Image } from './type/image';
 import {
@@ -72,7 +70,6 @@ const compareImages = (file: File, secondFile: File, options?: ResembleOptions):
   // options end
 
   var result: Partial<Result> = {};
-  var updateCallbackArray: CompleteCallback[] = [];
 
   var tolerance = { // between 0 and 255
     red: 16,
@@ -86,16 +83,6 @@ const compareImages = (file: File, secondFile: File, options?: ResembleOptions):
   var ignoreAntialiasing = false;
   var ignoreColors = false;
   var ignoreRectangles: Rectangle[] | null = null;
-
-  function triggerResultUpdate() {
-    var len = updateCallbackArray.length;
-    var i;
-    for (i = 0; i < len; i++) {
-      if (typeof updateCallbackArray[i] === 'function') {
-        updateCallbackArray[i](result);
-      }
-    }
-  }
 
   function loop(height: number, width: number, callback: (y: number, x: number) => void): void {
     var y, x;
@@ -413,8 +400,8 @@ const compareImages = (file: File, secondFile: File, options?: ResembleOptions):
     };
   }
 
-  function compare(one: File, two: File): void {
-    Promise
+  function compare(one: File, two: File): Promise<Result> {
+    return Promise
       .all([loadImageData(one), loadImageData(two)])
       .then(([image1, image2]: [Image, Image]) => {
         var width = image1.width > image2.width ? image1.width : image2.width;
@@ -427,91 +414,45 @@ const compareImages = (file: File, secondFile: File, options?: ResembleOptions):
         };
         //lksv: normalization removed
         analyseImages(image1, image2, width, height);
-        triggerResultUpdate();
+        return result as Result;
       });
   }
 
-  function getCompareApi(param: Function | File): CompareApi {
+  if (typeof opts.ignoreAntialiasing !== 'undefined' && opts.ignoreAntialiasing) {
+    tolerance.red = 32;
+    tolerance.green = 32;
+    tolerance.blue = 32;
+    tolerance.alpha = 32;
+    tolerance.minBrightness = 64;
+    tolerance.maxBrightness = 96;
 
-    var secondFile: File,
-      hasMethod = typeof param === 'function';
+    ignoreAntialiasing = true;
+    ignoreColors = false;
+  }
+  if (typeof opts.ignoreColors !== 'undefined' && opts.ignoreColors) {
+    tolerance.alpha = 16;
+    tolerance.minBrightness = 16;
+    tolerance.maxBrightness = 240;
 
-    if (!hasMethod) {
-      // assume it's file data
-      secondFile = param as File;
-    }
+    ignoreAntialiasing = false;
+    ignoreColors = true;
+  }
+  if (typeof opts.ignoreNothing !== 'undefined' && opts.ignoreNothing) {
+    tolerance.red = 16;
+    tolerance.green = 16;
+    tolerance.blue = 16;
+    tolerance.alpha = 16;
+    tolerance.minBrightness = 16;
+    tolerance.maxBrightness = 240;
 
-    var self: CompareApi = {
-      ignoreNothing: function () {
-
-        tolerance.red = 16;
-        tolerance.green = 16;
-        tolerance.blue = 16;
-        tolerance.alpha = 16;
-        tolerance.minBrightness = 16;
-        tolerance.maxBrightness = 240;
-
-        ignoreAntialiasing = false;
-        ignoreColors = false;
-
-        if (hasMethod) { (param as Function)(); }
-        return self;
-      },
-      ignoreAntialiasing: function () {
-
-        tolerance.red = 32;
-        tolerance.green = 32;
-        tolerance.blue = 32;
-        tolerance.alpha = 32;
-        tolerance.minBrightness = 64;
-        tolerance.maxBrightness = 96;
-
-        ignoreAntialiasing = true;
-        ignoreColors = false;
-
-        if (hasMethod) { (param as Function)(); }
-        return self;
-      },
-      ignoreColors: function () {
-
-        tolerance.alpha = 16;
-        tolerance.minBrightness = 16;
-        tolerance.maxBrightness = 240;
-
-        ignoreAntialiasing = false;
-        ignoreColors = true;
-
-        if (hasMethod) { (param as Function)(); }
-        return self;
-      },
-      //array of rectangles, each rectangle is defined as (x, y, width. height)
-      //e.g. [[325, 170, 100, 40]]
-      ignoreRectangles: function (rectangles) {
-        ignoreRectangles = rectangles;
-        return self;
-      },
-      repaint: function () {
-        if (hasMethod) { (param as Function)(); }
-        return self;
-      },
-      onComplete: function (callback) {
-
-        updateCallbackArray.push(callback);
-
-        var wrapper = function () {
-          compare(file, secondFile);
-        };
-
-        wrapper();
-
-        return getCompareApi(wrapper);
-      }
-    };
-
-    return self;
+    ignoreAntialiasing = false;
+    ignoreColors = false;
+  }
+  if (typeof opts.ignoreRectangles !== 'undefined') {
+    ignoreRectangles = opts.ignoreRectangles;
   }
 
-  return getCompareApi(secondFile);
+  return compare(file, secondFile);
 };
 
 export {
