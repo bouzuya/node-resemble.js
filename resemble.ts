@@ -49,9 +49,9 @@ interface Color {
   alpha: Byte;
 }
 
-type FileData = string | Buffer;
+type File = string | Buffer;
 type Byte = number;
-interface CompleteData {
+interface Result {
   red: number;
   green: number;
   blue: number;
@@ -67,7 +67,7 @@ interface CompleteData {
     height: number;
   };
 };
-type CompleteCallback = (data: CompleteData) => void;
+type CompleteCallback = (data: Result) => void;
 type Rectangle = [number, number, number, number]; // (x, y, width, height)
 
 interface CompareApi {
@@ -80,8 +80,8 @@ interface CompareApi {
 }
 
 interface Resemble {
-  (fileData: FileData): {
-    compareTo: (secondFileData: FileData) => CompareApi;
+  (file: File): {
+    compareTo: (secondFile: File) => CompareApi;
     onComplete: (callback: CompleteCallback) => void;
   };
   outputSettings: (options: ResembleOptions) => Resemble;
@@ -120,12 +120,12 @@ var errorPixelTransform = {
 var errorPixelTransformer: ErrorPixelTransformer = errorPixelTransform.flat;
 var largeImageThreshold = 1200;
 
-_this['resemble'] = function (fileData: FileData): {
-  compareTo: (secondFileData: FileData) => CompareApi;
+_this['resemble'] = function (file: File): {
+  compareTo: (secondFile: File) => CompareApi;
   onComplete: (callback: CompleteCallback) => void;
 } {
 
-  var data: Partial<CompleteData> = {};
+  var result: Partial<Result> = {};
   var images: Image[] = [];
   var updateCallbackArray: CompleteCallback[] = [];
 
@@ -142,12 +142,12 @@ _this['resemble'] = function (fileData: FileData): {
   var ignoreColors = false;
   var ignoreRectangles: Rectangle[] | null = null;
 
-  function triggerDataUpdate() {
+  function triggerResultUpdate() {
     var len = updateCallbackArray.length;
     var i;
     for (i = 0; i < len; i++) {
       if (typeof updateCallbackArray[i] === 'function') {
-        updateCallbackArray[i](data);
+        updateCallbackArray[i](result);
       }
     }
   }
@@ -161,7 +161,7 @@ _this['resemble'] = function (fileData: FileData): {
     }
   }
 
-  function parseImage(sourceImageData: Buffer, width: number, height: number): void {
+  function parseImage(imageData: Buffer, width: number, height: number): void {
 
     var pixleCount = 0;
     var redTotal = 0;
@@ -171,9 +171,9 @@ _this['resemble'] = function (fileData: FileData): {
 
     loop(height, width, function (y, x) {
       var offset = (y * width + x) * 4;
-      var red = sourceImageData[offset];
-      var green = sourceImageData[offset + 1];
-      var blue = sourceImageData[offset + 2];
+      var red = imageData[offset];
+      var green = imageData[offset + 1];
+      var blue = imageData[offset + 2];
       var brightness = getBrightness(red, green, blue);
 
       pixleCount++;
@@ -184,35 +184,34 @@ _this['resemble'] = function (fileData: FileData): {
       brightnessTotal += brightness / 255 * 100;
     });
 
-    data.red = Math.floor(redTotal / pixleCount);
-    data.green = Math.floor(greenTotal / pixleCount);
-    data.blue = Math.floor(blueTotal / pixleCount);
-    data.brightness = Math.floor(brightnessTotal / pixleCount);
+    result.red = Math.floor(redTotal / pixleCount);
+    result.green = Math.floor(greenTotal / pixleCount);
+    result.blue = Math.floor(blueTotal / pixleCount);
+    result.brightness = Math.floor(brightnessTotal / pixleCount);
 
-    triggerDataUpdate();
+    triggerResultUpdate();
   }
 
-  function loadImageData(fileData: string | Buffer, callback: (data: Image, width: number, height: number) => void) {
+  function loadImageData(file: File, callback: (image: Image, width: number, height: number) => void) {
 
-    if (Buffer.isBuffer(fileData)) {
+    if (Buffer.isBuffer(file)) {
       var png = new PNG();
-      png.parse(fileData, function (_err, data) {
-        callback(data, data.width, data.height);
+      png.parse(file, function (_err, image) {
+        callback(image, image.width, image.height);
       });
     } else {
-      var ext = fileData.substring(fileData.lastIndexOf(".") + 1);
+      var ext = file.substring(file.lastIndexOf(".") + 1);
       if (ext == "png") {
         var png = new PNG();
-        fs.createReadStream(fileData)
+        fs.createReadStream(file)
           .pipe(png)
           .on('parsed', function (this: png.PNG) {
             callback(this, this.width, this.height);
           });
       }
       if (ext == "jpg" || ext == "jpeg") {
-        var jpegData = fs.readFileSync(fileData);
-        var fileData_ = jpeg.decode(jpegData, true) as jpeg.RawImageData<Buffer>;
-        callback(fileData_, fileData_.width, fileData_.height);
+        var image = jpeg.decode(fs.readFileSync(file), true) as jpeg.RawImageData<Buffer>;
+        callback(image, image.width, image.height);
       }
     };
   }
@@ -291,7 +290,7 @@ _this['resemble'] = function (fileData: FileData): {
     return h;
   }
 
-  function isAntialiased(sourcePix: PixelWithBrightnessInfo, data: Buffer, cacheSet: 1 | 2, y: number, x: number, width: number): boolean {
+  function isAntialiased(sourcePix: PixelWithBrightnessInfo, imageData: Buffer, cacheSet: 1 | 2, y: number, x: number, width: number): boolean {
     var offset;
     var targetPix;
     var distance = 1;
@@ -311,7 +310,7 @@ _this['resemble'] = function (fileData: FileData): {
         } else {
 
           offset = ((y + j) * width + (x + i)) * 4;
-          targetPix = getPixelInfo(data, offset, cacheSet);
+          targetPix = getPixelInfo(imageData, offset, cacheSet);
 
           if (targetPix === null) {
             continue;
@@ -347,11 +346,11 @@ _this['resemble'] = function (fileData: FileData): {
   }
 
   function errorPixel(px: Buffer, offset: number, p1: Pixel, p2: Pixel): void {
-    var data = errorPixelTransformer(p1, p2);
-    px[offset] = data.r;
-    px[offset + 1] = data.g;
-    px[offset + 2] = data.b;
-    px[offset + 3] = data.a;
+    var p = errorPixelTransformer(p1, p2);
+    px[offset] = p.r;
+    px[offset + 1] = p.g;
+    px[offset + 2] = p.b;
+    px[offset + 3] = p.a;
   }
 
   // ? copyPixel(px: Buffer, offset: number, p1: Pixel, p2: Pixel): void
@@ -369,19 +368,19 @@ _this['resemble'] = function (fileData: FileData): {
     px[offset + 3] = p.a * pixelTransparency; //a
   }
 
-  function getPixelInfo(data: Buffer, offset: number, _cacheSet: 1 | 2): Pixel | null {
+  function getPixelInfo(imageData: Buffer, offset: number, _cacheSet: 1 | 2): Pixel | null {
     var r;
     var g;
     var b;
     var d;
     var a;
 
-    r = data[offset];
+    r = imageData[offset];
 
     if (typeof r !== 'undefined') {
-      g = data[offset + 1];
-      b = data[offset + 2];
-      a = data[offset + 3];
+      g = imageData[offset + 1];
+      b = imageData[offset + 2];
+      a = imageData[offset + 3];
       d = {
         r: r,
         g: g,
@@ -405,20 +404,20 @@ _this['resemble'] = function (fileData: FileData): {
     (p as PixelWithBrightnessAndHueInfo).h = getHue(p.r, p.g, p.b);
   }
 
-  function analyseImages(img1: Image, img2: Image, width: number, height: number): void {
+  function analyseImages(image1: Image, image2: Image, width: number, height: number): void {
 
-    var data1 = img1.data;
-    var data2 = img2.data;
+    var imageData1 = image1.data;
+    var imageData2 = image2.data;
 
     //TODO
-    var imgd = new PNG({
-      width: img1.width,
-      height: img1.height,
-      deflateChunkSize: img1.deflateChunkSize,
-      deflateLevel: img1.deflateLevel,
-      deflateStrategy: img1.deflateStrategy,
+    var image = new PNG({
+      width: image1.width,
+      height: image1.height,
+      deflateChunkSize: image1.deflateChunkSize,
+      deflateLevel: image1.deflateLevel,
+      deflateStrategy: image1.deflateStrategy,
     });
-    var targetPix = imgd.data;
+    var targetPix = image.data;
 
     var mismatchCount = 0;
 
@@ -434,7 +433,6 @@ _this['resemble'] = function (fileData: FileData): {
     }
 
     loop(height, width, function (y, x) {
-
       var offset = (y * width + x) * 4;
 
       if (skip) { // only skip if the image isn't small
@@ -451,8 +449,8 @@ _this['resemble'] = function (fileData: FileData): {
         }
       }
 
-      var pixel1 = getPixelInfo(data1, offset, 1);
-      var pixel2 = getPixelInfo(data2, offset, 2);
+      var pixel1 = getPixelInfo(imageData1, offset, 1);
+      var pixel2 = getPixelInfo(imageData2, offset, 2);
 
       if (pixel1 === null || pixel2 === null) {
         return;
@@ -495,8 +493,8 @@ _this['resemble'] = function (fileData: FileData): {
       } else if (ignoreAntialiasing && (
         addBrightnessInfo(pixel1), // jit pixel info augmentation looks a little weird, sorry.
         addBrightnessInfo(pixel2),
-        isAntialiased(pixel1 as PixelWithBrightnessInfo, data1, 1, y, x, width) ||
-        isAntialiased(pixel2 as PixelWithBrightnessInfo, data2, 2, y, x, width)
+        isAntialiased(pixel1 as PixelWithBrightnessInfo, imageData1, 1, y, x, width) ||
+        isAntialiased(pixel2 as PixelWithBrightnessInfo, imageData2, 2, y, x, width)
       )) {
 
         if (isPixelBrightnessSimilar(pixel1 as PixelWithBrightnessInfo, pixel2 as PixelWithBrightnessInfo)) {
@@ -512,46 +510,46 @@ _this['resemble'] = function (fileData: FileData): {
 
     });
 
-    data.rawMisMatchPercentage = (mismatchCount / (height * width) * 100);
-    data.misMatchPercentage = data.rawMisMatchPercentage.toFixed(2);
-    data.analysisTime = Date.now() - time;
+    result.rawMisMatchPercentage = (mismatchCount / (height * width) * 100);
+    result.misMatchPercentage = result.rawMisMatchPercentage.toFixed(2);
+    result.analysisTime = Date.now() - time;
 
-    data.getDiffImage = function (_text) {
-      return imgd;
+    result.getDiffImage = function (_text) {
+      return image;
     };
 
-    data.getDiffImageAsJPEG = function (quality) {
+    result.getDiffImageAsJPEG = function (quality) {
       return jpeg.encode({
         data: targetPix,
-        width: img1.width,
-        height: img1.height
+        width: image1.width,
+        height: image1.height
       }, typeof quality !== 'undefined' ? quality : 50).data;
     };
   }
 
-  function compare(one: FileData, two: FileData): void {
+  function compare(one: File, two: File): void {
 
-    function onceWeHaveBoth(img: Image) {
+    function onceWeHaveBoth(image: Image) {
       var width;
       var height;
 
-      images.push(img);
+      images.push(image);
       if (images.length === 2) {
         width = images[0].width > images[1].width ? images[0].width : images[1].width;
         height = images[0].height > images[1].height ? images[0].height : images[1].height;
 
         if ((images[0].width === images[1].width) && (images[0].height === images[1].height)) {
-          data.isSameDimensions = true;
+          result.isSameDimensions = true;
         } else {
-          data.isSameDimensions = false;
+          result.isSameDimensions = false;
         }
 
-        data.dimensionDifference = { width: images[0].width - images[1].width, height: images[0].height - images[1].height };
+        result.dimensionDifference = { width: images[0].width - images[1].width, height: images[0].height - images[1].height };
 
         //lksv: normalization removed
         analyseImages(images[0], images[1], width, height);
 
-        triggerDataUpdate();
+        triggerResultUpdate();
       }
     }
 
@@ -560,14 +558,14 @@ _this['resemble'] = function (fileData: FileData): {
     loadImageData(two, onceWeHaveBoth);
   }
 
-  function getCompareApi(param: Function | FileData): CompareApi {
+  function getCompareApi(param: Function | File): CompareApi {
 
-    var secondFileData: FileData,
+    var secondFile: File,
       hasMethod = typeof param === 'function';
 
     if (!hasMethod) {
       // assume it's file data
-      secondFileData = param as FileData;
+      secondFile = param as File;
     }
 
     var self: CompareApi = {
@@ -628,7 +626,7 @@ _this['resemble'] = function (fileData: FileData): {
         updateCallbackArray.push(callback);
 
         var wrapper = function () {
-          compare(fileData, secondFileData);
+          compare(file, secondFile);
         };
 
         wrapper();
@@ -643,12 +641,12 @@ _this['resemble'] = function (fileData: FileData): {
   return {
     onComplete: function (callback) {
       updateCallbackArray.push(callback);
-      loadImageData(fileData, function (imageData, width, height) {
-        parseImage(imageData.data, width, height);
+      loadImageData(file, function (image, width, height) {
+        parseImage(image.data, width, height);
       });
     },
-    compareTo: function (secondFileData) {
-      return getCompareApi(secondFileData);
+    compareTo: function (secondFile) {
+      return getCompareApi(secondFile);
     }
   };
 
