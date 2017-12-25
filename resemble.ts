@@ -1,14 +1,97 @@
-'use strict';
+import * as fs from 'fs';
+import jpeg = require('jpeg-js');
+import png = require('pngjs');
 
-var PNG = require('pngjs').PNG;
-var fs = require('fs');
-var jpeg = require('jpeg-js');
+const { PNG } = png;
 
-var _this = {};
+interface ResembleOptions {
+  errorColor?: Partial<Color>;
+  errorType?: 'flat' | 'movement';
+  largeImageThreshold?: number;
+  transparency?: number;
+}
+
+interface Pixel {
+  r: Byte;
+  g: Byte;
+  b: Byte;
+  a: Byte;
+}
+
+interface BrightnessInfo {
+  brightness: number;
+}
+
+interface HueInfo {
+  h: number;
+}
+
+type PixelWithBrightnessInfo = Pixel & BrightnessInfo;
+type PixelWithBrightnessAndHueInfo = Pixel & BrightnessInfo & HueInfo;
+
+interface ErrorPixelTransformer {
+  (d1: Pixel, d2: Pixel): { r: Byte; g: Byte; b: Byte; a: Byte; };
+}
+
+interface Image {
+  data: Buffer;
+  height: number;
+  width: number;
+  deflateChunkSize?: number; // ?
+  deflateLevel?: number; // ?
+  deflateStrategy?: number; // ?
+}
+
+interface Color {
+  red: Byte;
+  green: Byte;
+  blue: Byte;
+  alpha: Byte;
+}
+
+type FileData = string | Buffer;
+type Byte = number;
+interface CompleteData {
+  red: number;
+  green: number;
+  blue: number;
+  brightness: number;
+  rawMisMatchPercentage: number;
+  misMatchPercentage: string;
+  analysisTime: number;
+  getDiffImage: (_text: any) => png.PNG;// imgd
+  getDiffImageAsJPEG: (quality?: number) => Buffer;
+  isSameDimensions: boolean;
+  dimensionDifference: {
+    width: number;
+    height: number;
+  };
+};
+type CompleteCallback = (data: CompleteData) => void;
+type Rectangle = [number, number, number, number]; // (x, y, width, height)
+
+interface CompareApi {
+  ignoreAntialiasing: () => CompareApi;
+  ignoreColors: () => CompareApi;
+  ignoreNothing: () => CompareApi;
+  ignoreRectangles: (rectangles: Rectangle[]) => CompareApi;
+  onComplete: (callback: CompleteCallback) => CompareApi;
+  repaint: () => CompareApi;
+}
+
+interface Resemble {
+  (fileData: FileData): {
+    compareTo: (secondFileData: FileData) => CompareApi;
+    onComplete: (callback: CompleteCallback) => void;
+  };
+  outputSettings: (options: ResembleOptions) => Resemble;
+}
+
+var _this: { resemble: Resemble; } = {} as any;
 
 var pixelTransparency = 1;
 
-var errorPixelColor = { // Color for Error Pixels. Between 0 and 255.
+var errorPixelColor: Color = { // Color for Error Pixels. Between 0 and 255.
   red: 255,
   green: 0,
   blue: 255,
@@ -16,7 +99,7 @@ var errorPixelColor = { // Color for Error Pixels. Between 0 and 255.
 };
 
 var errorPixelTransform = {
-  flat: function (d1, d2) {
+  flat: function (_d1: Pixel, _d2: Pixel) {
     return {
       r: errorPixelColor.red,
       g: errorPixelColor.green,
@@ -24,7 +107,7 @@ var errorPixelTransform = {
       a: errorPixelColor.alpha
     }
   },
-  movement: function (d1, d2) {
+  movement: function (_d1: Pixel, d2: Pixel) {
     return {
       r: ((d2.r * (errorPixelColor.red / 255)) + errorPixelColor.red) / 2,
       g: ((d2.g * (errorPixelColor.green / 255)) + errorPixelColor.green) / 2,
@@ -34,14 +117,17 @@ var errorPixelTransform = {
   }
 };
 
-var errorPixelTransformer = errorPixelTransform.flat;
+var errorPixelTransformer: ErrorPixelTransformer = errorPixelTransform.flat;
 var largeImageThreshold = 1200;
 
-_this['resemble'] = function (fileData) {
+_this['resemble'] = function (fileData: FileData): {
+  compareTo: (secondFileData: FileData) => CompareApi;
+  onComplete: (callback: CompleteCallback) => void;
+} {
 
-  var data = {};
-  var images = [];
-  var updateCallbackArray = [];
+  var data: Partial<CompleteData> = {};
+  var images: Image[] = [];
+  var updateCallbackArray: CompleteCallback[] = [];
 
   var tolerance = { // between 0 and 255
     red: 16,
@@ -54,7 +140,7 @@ _this['resemble'] = function (fileData) {
 
   var ignoreAntialiasing = false;
   var ignoreColors = false;
-  var ignoreRectangles = null;
+  var ignoreRectangles: Rectangle[] | null = null;
 
   function triggerDataUpdate() {
     var len = updateCallbackArray.length;
@@ -66,7 +152,7 @@ _this['resemble'] = function (fileData) {
     }
   }
 
-  function loop(x, y, callback) {
+  function loop(x: number, y: number, callback: (x: number, y: number) => void): void {
     var i, j;
 
     for (i = 0; i < x; i++) {
@@ -76,7 +162,7 @@ _this['resemble'] = function (fileData) {
     }
   }
 
-  function parseImage(sourceImageData, width, height) {
+  function parseImage(sourceImageData: Buffer, width: number, height: number): void {
 
     var pixleCount = 0;
     var redTotal = 0;
@@ -107,11 +193,11 @@ _this['resemble'] = function (fileData) {
     triggerDataUpdate();
   }
 
-  function loadImageData(fileData, callback) {
+  function loadImageData(fileData: string | Buffer, callback: (data: Image, width: number, height: number) => void) {
 
     if (Buffer.isBuffer(fileData)) {
       var png = new PNG();
-      png.parse(fileData, function (err, data) {
+      png.parse(fileData, function (_err, data) {
         callback(data, data.width, data.height);
       });
     } else {
@@ -120,19 +206,19 @@ _this['resemble'] = function (fileData) {
         var png = new PNG();
         fs.createReadStream(fileData)
           .pipe(png)
-          .on('parsed', function () {
+          .on('parsed', function (this: png.PNG) {
             callback(this, this.width, this.height);
           });
       }
       if (ext == "jpg" || ext == "jpeg") {
         var jpegData = fs.readFileSync(fileData);
-        fileData = jpeg.decode(jpegData, true);
-        callback(fileData, fileData.width, fileData.height);
+        var fileData_ = jpeg.decode(jpegData, true) as jpeg.RawImageData<Buffer>;
+        callback(fileData_, fileData_.width, fileData_.height);
       }
     };
   }
 
-  function isColorSimilar(a, b, color) {
+  function isColorSimilar(a: Pixel['a'] | PixelWithBrightnessInfo['brightness'], b: Pixel['a'] | PixelWithBrightnessInfo['brightness'], color: 'red' | 'green' | 'blue' | 'alpha' | 'minBrightness'): boolean {
 
     var absDiff = Math.abs(a - b);
 
@@ -152,28 +238,28 @@ _this['resemble'] = function (fileData) {
     }
   }
 
-  function isNumber(n) {
+  function isNumber(n: string): boolean {
     return !isNaN(parseFloat(n));
   }
 
-  function isPixelBrightnessSimilar(d1, d2) {
+  function isPixelBrightnessSimilar(d1: PixelWithBrightnessInfo, d2: PixelWithBrightnessInfo): boolean {
     var alpha = isColorSimilar(d1.a, d2.a, 'alpha');
     var brightness = isColorSimilar(d1.brightness, d2.brightness, 'minBrightness');
     return brightness && alpha;
   }
 
-  function getBrightness(r, g, b) {
+  function getBrightness(r: Byte, g: Byte, b: Byte): number {
     return 0.3 * r + 0.59 * g + 0.11 * b;
   }
 
-  function isRGBSame(d1, d2) {
+  function isRGBSame(d1: Pixel, d2: Pixel) {
     var red = d1.r === d2.r;
     var green = d1.g === d2.g;
     var blue = d1.b === d2.b;
     return red && green && blue;
   }
 
-  function isRGBSimilar(d1, d2) {
+  function isRGBSimilar(d1: Pixel, d2: Pixel): boolean {
     var red = isColorSimilar(d1.r, d2.r, 'red');
     var green = isColorSimilar(d1.g, d2.g, 'green');
     var blue = isColorSimilar(d1.b, d2.b, 'blue');
@@ -182,17 +268,17 @@ _this['resemble'] = function (fileData) {
     return red && green && blue && alpha;
   }
 
-  function isContrasting(d1, d2) {
+  function isContrasting(d1: PixelWithBrightnessInfo, d2: PixelWithBrightnessInfo): boolean {
     return Math.abs(d1.brightness - d2.brightness) > tolerance.maxBrightness;
   }
 
-  function getHue(r, g, b) {
+  function getHue(r: Byte, g: Byte, b: Byte): number { // Pixel['h']
 
     r = r / 255;
     g = g / 255;
     b = b / 255;
     var max = Math.max(r, g, b), min = Math.min(r, g, b);
-    var h;
+    var h: number;
     var d;
 
     if (max == min) {
@@ -210,7 +296,7 @@ _this['resemble'] = function (fileData) {
     return h;
   }
 
-  function isAntialiased(sourcePix, data, cacheSet, verticalPos, horizontalPos, width) {
+  function isAntialiased(sourcePix: PixelWithBrightnessInfo, data: Buffer, cacheSet: 1 | 2, verticalPos: number, horizontalPos: number, width: number): boolean {
     var offset;
     var targetPix;
     var distance = 1;
@@ -237,17 +323,17 @@ _this['resemble'] = function (fileData) {
           }
 
           addBrightnessInfo(targetPix);
-          addHueInfo(targetPix);
+          addHueInfo(targetPix as PixelWithBrightnessInfo);
 
-          if (isContrasting(sourcePix, targetPix)) {
+          if (isContrasting(sourcePix as PixelWithBrightnessAndHueInfo, targetPix as PixelWithBrightnessAndHueInfo)) {
             hasHighContrastSibling++;
           }
 
-          if (isRGBSame(sourcePix, targetPix)) {
+          if (isRGBSame(sourcePix as PixelWithBrightnessAndHueInfo, targetPix as PixelWithBrightnessAndHueInfo)) {
             hasEquivilantSibling++;
           }
 
-          if (Math.abs(targetPix.h - sourcePix.h) > 0.3) {
+          if (Math.abs((targetPix as PixelWithBrightnessAndHueInfo).h - (sourcePix as PixelWithBrightnessAndHueInfo).h) > 0.3) {
             hasSiblingWithDifferentHue++;
           }
 
@@ -265,7 +351,7 @@ _this['resemble'] = function (fileData) {
     return false;
   }
 
-  function errorPixel(px, offset, data1, data2) {
+  function errorPixel(px: Buffer, offset: number, data1: Pixel, data2: Pixel): void {
     var data = errorPixelTransformer(data1, data2);
     px[offset] = data.r;
     px[offset + 1] = data.g;
@@ -273,21 +359,22 @@ _this['resemble'] = function (fileData) {
     px[offset + 3] = data.a;
   }
 
-  function copyPixel(px, offset, data) {
+  // ? copyPixel(px: Buffer, offset: number, data: Pixel, data2: Pixel): void
+  function copyPixel(px: Buffer, offset: number, data: Pixel): void {
     px[offset] = data.r; //r
     px[offset + 1] = data.g; //g
     px[offset + 2] = data.b; //b
     px[offset + 3] = data.a * pixelTransparency; //a
   }
 
-  function copyGrayScalePixel(px, offset, data) {
+  function copyGrayScalePixel(px: Buffer, offset: number, data: Pixel): void {
     px[offset] = data.brightness; //r
     px[offset + 1] = data.brightness; //g
     px[offset + 2] = data.brightness; //b
     px[offset + 3] = data.a * pixelTransparency; //a
   }
 
-  function getPixelInfo(data, offset, cacheSet) {
+  function getPixelInfo(data: Buffer, offset: number, _cacheSet: 1 | 2): Pixel | null {
     var r;
     var g;
     var b;
@@ -313,15 +400,17 @@ _this['resemble'] = function (fileData) {
     }
   }
 
-  function addBrightnessInfo(data) {
-    data.brightness = getBrightness(data.r, data.g, data.b); // 'corrected' lightness
+  // convert Pixel to PixelWithBrightnessInfo
+  function addBrightnessInfo(data: Pixel): void {
+    (data as PixelWithBrightnessInfo).brightness = getBrightness(data.r, data.g, data.b); // 'corrected' lightness
   }
 
-  function addHueInfo(data) {
-    data.h = getHue(data.r, data.g, data.b);
+  // convert PixelWithBrightnessInfo to PixelWithBrightnessAndHueInfo
+  function addHueInfo(data: PixelWithBrightnessInfo): void {
+    (data as PixelWithBrightnessAndHueInfo).h = getHue(data.r, data.g, data.b);
   }
 
-  function analyseImages(img1, img2, width, height) {
+  function analyseImages(img1: Image, img2: Image, width: number, height: number): void {
 
     var data1 = img1.data;
     var data2 = img2.data;
@@ -340,7 +429,7 @@ _this['resemble'] = function (fileData) {
 
     var time = Date.now();
 
-    var skip;
+    var skip: number | undefined;
 
     var currentRectangle = null;
     var rectagnlesIdx = 0;
@@ -356,7 +445,7 @@ _this['resemble'] = function (fileData) {
       if (skip) { // only skip if the image isn't small
         if (verticalPos % skip === 0 || horizontalPos % skip === 0) {
 
-          copyPixel(targetPix, offset, {
+          copyPixel(targetPix, offset, { // ? { r: 0, b: 0, g: 0, a: 0 }
             red: 0,
             blue: 0,
             green: 0,
@@ -384,7 +473,7 @@ _this['resemble'] = function (fileData) {
             (horizontalPos >= currentRectangle[0]) &&
             (horizontalPos < currentRectangle[0] + currentRectangle[2])
           ) {
-            copyGrayScalePixel(targetPix, offset, pixel2);
+            copyGrayScalePixel(targetPix, offset, pixel2); // ? pixel2.brightness is not defined
             //copyPixel(targetPix, offset, pixel1, pixel2);
             return;
           }
@@ -396,10 +485,10 @@ _this['resemble'] = function (fileData) {
         addBrightnessInfo(pixel1);
         addBrightnessInfo(pixel2);
 
-        if (isPixelBrightnessSimilar(pixel1, pixel2)) {
-          copyGrayScalePixel(targetPix, offset, pixel2);
+        if (isPixelBrightnessSimilar(pixel1 as PixelWithBrightnessInfo, pixel2 as PixelWithBrightnessInfo)) {
+          copyGrayScalePixel(targetPix, offset, pixel2 as PixelWithBrightnessInfo);
         } else {
-          errorPixel(targetPix, offset, pixel1, pixel2);
+          errorPixel(targetPix, offset, pixel1 as PixelWithBrightnessInfo, pixel2 as PixelWithBrightnessInfo);
           mismatchCount++;
         }
         return;
@@ -411,18 +500,18 @@ _this['resemble'] = function (fileData) {
       } else if (ignoreAntialiasing && (
         addBrightnessInfo(pixel1), // jit pixel info augmentation looks a little weird, sorry.
         addBrightnessInfo(pixel2),
-        isAntialiased(pixel1, data1, 1, verticalPos, horizontalPos, width) ||
-        isAntialiased(pixel2, data2, 2, verticalPos, horizontalPos, width)
+        isAntialiased(pixel1 as PixelWithBrightnessInfo, data1, 1, verticalPos, horizontalPos, width) ||
+        isAntialiased(pixel2 as PixelWithBrightnessInfo, data2, 2, verticalPos, horizontalPos, width)
       )) {
 
-        if (isPixelBrightnessSimilar(pixel1, pixel2)) {
-          copyGrayScalePixel(targetPix, offset, pixel2);
+        if (isPixelBrightnessSimilar(pixel1 as PixelWithBrightnessInfo, pixel2 as PixelWithBrightnessInfo)) {
+          copyGrayScalePixel(targetPix, offset, pixel2 as PixelWithBrightnessInfo);
         } else {
-          errorPixel(targetPix, offset, pixel1, pixel2);
+          errorPixel(targetPix, offset, pixel1 as PixelWithBrightnessInfo, pixel2 as PixelWithBrightnessInfo);
           mismatchCount++;
         }
       } else {
-        errorPixel(targetPix, offset, pixel1, pixel2);
+        errorPixel(targetPix, offset, pixel1 as PixelWithBrightnessInfo, pixel2 as PixelWithBrightnessInfo);
         mismatchCount++;
       }
 
@@ -432,7 +521,7 @@ _this['resemble'] = function (fileData) {
     data.misMatchPercentage = data.rawMisMatchPercentage.toFixed(2);
     data.analysisTime = Date.now() - time;
 
-    data.getDiffImage = function (text) {
+    data.getDiffImage = function (_text) {
       return imgd;
     };
 
@@ -445,9 +534,9 @@ _this['resemble'] = function (fileData) {
     };
   }
 
-  function compare(one, two) {
+  function compare(one: FileData, two: FileData): void {
 
-    function onceWeHaveBoth(img) {
+    function onceWeHaveBoth(img: Image) {
       var width;
       var height;
 
@@ -476,17 +565,17 @@ _this['resemble'] = function (fileData) {
     loadImageData(two, onceWeHaveBoth);
   }
 
-  function getCompareApi(param) {
+  function getCompareApi(param: Function | FileData): CompareApi {
 
-    var secondFileData,
+    var secondFileData: FileData,
       hasMethod = typeof param === 'function';
 
     if (!hasMethod) {
       // assume it's file data
-      secondFileData = param;
+      secondFileData = param as FileData;
     }
 
-    var self = {
+    var self: CompareApi = {
       ignoreNothing: function () {
 
         tolerance.red = 16;
@@ -499,7 +588,7 @@ _this['resemble'] = function (fileData) {
         ignoreAntialiasing = false;
         ignoreColors = false;
 
-        if (hasMethod) { param(); }
+        if (hasMethod) { (param as Function)(); }
         return self;
       },
       ignoreAntialiasing: function () {
@@ -514,7 +603,7 @@ _this['resemble'] = function (fileData) {
         ignoreAntialiasing = true;
         ignoreColors = false;
 
-        if (hasMethod) { param(); }
+        if (hasMethod) { (param as Function)(); }
         return self;
       },
       ignoreColors: function () {
@@ -526,7 +615,7 @@ _this['resemble'] = function (fileData) {
         ignoreAntialiasing = false;
         ignoreColors = true;
 
-        if (hasMethod) { param(); }
+        if (hasMethod) { (param as Function)(); }
         return self;
       },
       //array of rectangles, each rectangle is defined as (x, y, width. height)
@@ -536,7 +625,7 @@ _this['resemble'] = function (fileData) {
         return self;
       },
       repaint: function () {
-        if (hasMethod) { param(); }
+        if (hasMethod) { (param as Function)(); }
         return self;
       },
       onComplete: function (callback) {
@@ -570,8 +659,8 @@ _this['resemble'] = function (fileData) {
 
 };
 
-_this['resemble'].outputSettings = function (options) {
-  var key;
+_this['resemble'].outputSettings = function (options: ResembleOptions): Resemble {
+  var key: keyof Color;
   var undefined;
 
   if (options.errorColor) {
