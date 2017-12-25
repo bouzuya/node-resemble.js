@@ -1,7 +1,3 @@
-/*
-James Cryer / Huddle 2014
-URL: https://github.com/Huddle/Resemble.js
-*/
 'use strict';
 
 var PNG = require('pngjs').PNG;

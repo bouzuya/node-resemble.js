@@ -93,3 +93,8 @@ resemble.outputSettings({
 Credits:
  * Created by [James Cryer](http://github.com/jamescryer) and the Huddle development team.
  * [Lukas Svoboda](http://github.com/lksv) - modification for node.js
+
+## LICENSE
+
+- Resemble.js - James Cryer / Huddle 2014
+  https://github.com/Huddle/Resemble.js
