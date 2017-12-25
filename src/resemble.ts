@@ -1,4 +1,3 @@
-import * as fs from 'fs';
 import jpeg = require('jpeg-js');
 import png = require('pngjs');
 import { Byte } from './type/byte';
@@ -16,6 +15,7 @@ import { Rectangle } from './type/rectangle';
 import { Resemble } from './type/resemble';
 import { ResembleOptions } from './type/resemble-options';
 import { Result } from './type/result';
+import { loadImageData } from './load-image-data';
 
 const { PNG } = png;
 
@@ -76,7 +76,6 @@ _this['resemble'] = function (file: File, options?: ResembleOptions): {
   // options end
 
   var result: Partial<Result> = {};
-  var images: Image[] = [];
   var updateCallbackArray: CompleteCallback[] = [];
 
   var tolerance = { // between 0 and 255
@@ -140,30 +139,6 @@ _this['resemble'] = function (file: File, options?: ResembleOptions): {
     result.brightness = Math.floor(brightnessTotal / pixleCount);
 
     triggerResultUpdate();
-  }
-
-  function loadImageData(file: File, callback: (image: Image, width: number, height: number) => void) {
-
-    if (Buffer.isBuffer(file)) {
-      var png = new PNG();
-      png.parse(file, function (_err, image) {
-        callback(image, image.width, image.height);
-      });
-    } else {
-      var ext = file.substring(file.lastIndexOf(".") + 1);
-      if (ext == "png") {
-        var png = new PNG();
-        fs.createReadStream(file)
-          .pipe(png)
-          .on('parsed', function (this: png.PNG) {
-            callback(this, this.width, this.height);
-          });
-      }
-      if (ext == "jpg" || ext == "jpeg") {
-        var image = jpeg.decode(fs.readFileSync(file), true) as jpeg.RawImageData<Buffer>;
-        callback(image, image.width, image.height);
-      }
-    };
   }
 
   function isColorSimilar(a: Pixel['a'] | PixelWithBrightnessInfo['brightness'], b: Pixel['a'] | PixelWithBrightnessInfo['brightness'], color: 'red' | 'green' | 'blue' | 'alpha' | 'minBrightness'): boolean {
@@ -478,34 +453,21 @@ _this['resemble'] = function (file: File, options?: ResembleOptions): {
   }
 
   function compare(one: File, two: File): void {
-
-    function onceWeHaveBoth(image: Image) {
-      var width;
-      var height;
-
-      images.push(image);
-      if (images.length === 2) {
-        width = images[0].width > images[1].width ? images[0].width : images[1].width;
-        height = images[0].height > images[1].height ? images[0].height : images[1].height;
-
-        if ((images[0].width === images[1].width) && (images[0].height === images[1].height)) {
-          result.isSameDimensions = true;
-        } else {
-          result.isSameDimensions = false;
-        }
-
-        result.dimensionDifference = { width: images[0].width - images[1].width, height: images[0].height - images[1].height };
-
+    Promise
+      .all([loadImageData(one), loadImageData(two)])
+      .then(([image1, image2]: [Image, Image]) => {
+        var width = image1.width > image2.width ? image1.width : image2.width;
+        var height = image1.height > image2.height ? image1.height : image2.height;
+        result.isSameDimensions =
+          image1.width === image2.width && image1.height === image2.height;
+        result.dimensionDifference = {
+          width: image1.width - image2.width,
+          height: image1.height - image2.height
+        };
         //lksv: normalization removed
-        analyseImages(images[0], images[1], width, height);
-
+        analyseImages(image1, image2, width, height);
         triggerResultUpdate();
-      }
-    }
-
-    images = [];
-    loadImageData(one, onceWeHaveBoth);
-    loadImageData(two, onceWeHaveBoth);
+      });
   }
 
   function getCompareApi(param: Function | File): CompareApi {
@@ -591,8 +553,8 @@ _this['resemble'] = function (file: File, options?: ResembleOptions): {
   return {
     onComplete: function (callback) {
       updateCallbackArray.push(callback);
-      loadImageData(file, function (image, width, height) {
-        parseImage(image.data, width, height);
+      loadImageData(file).then((image) => {
+        parseImage(image.data, image.width, image.height);
       });
     },
     compareTo: function (secondFile) {
