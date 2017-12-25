@@ -56,7 +56,6 @@ var largeImageThreshold = 1200;
 
 _this['resemble'] = function (file: File, options?: ResembleOptions): {
   compareTo: (secondFile: File) => CompareApi;
-  onComplete: (callback: CompleteCallback) => void;
 } {
   // options start
   var key: keyof Color;
@@ -110,37 +109,6 @@ _this['resemble'] = function (file: File, options?: ResembleOptions): {
         callback(y, x);
       }
     }
-  }
-
-  function parseImage(imageData: Buffer, width: number, height: number): void {
-
-    var pixleCount = 0;
-    var redTotal = 0;
-    var greenTotal = 0;
-    var blueTotal = 0;
-    var brightnessTotal = 0;
-
-    loop(height, width, function (y, x) {
-      var offset = (y * width + x) * 4;
-      var red = imageData[offset];
-      var green = imageData[offset + 1];
-      var blue = imageData[offset + 2];
-      var brightness = getBrightness(red, green, blue);
-
-      pixleCount++;
-
-      redTotal += red / 255 * 100;
-      greenTotal += green / 255 * 100;
-      blueTotal += blue / 255 * 100;
-      brightnessTotal += brightness / 255 * 100;
-    });
-
-    result.red = Math.floor(redTotal / pixleCount);
-    result.green = Math.floor(greenTotal / pixleCount);
-    result.blue = Math.floor(blueTotal / pixleCount);
-    result.brightness = Math.floor(brightnessTotal / pixleCount);
-
-    triggerResultUpdate();
   }
 
   function isColorSimilar(a: Pixel['a'] | PixelWithBrightnessInfo['brightness'], b: Pixel['a'] | PixelWithBrightnessInfo['brightness'], color: 'red' | 'green' | 'blue' | 'alpha' | 'minBrightness'): boolean {
@@ -549,12 +517,6 @@ _this['resemble'] = function (file: File, options?: ResembleOptions): {
   }
 
   return {
-    onComplete: function (callback) {
-      updateCallbackArray.push(callback);
-      loadImageData(file).then((image) => {
-        parseImage(image.data, image.width, image.height);
-      });
-    },
     compareTo: function (secondFile) {
       return getCompareApi(secondFile);
     }
