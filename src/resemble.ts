@@ -17,6 +17,7 @@ import { ResembleOptions } from './type/resemble-options';
 import { Result } from './type/result';
 import { getBrightness } from './get-brightness';
 import { loadImageData } from './load-image-data';
+import { parseImage } from './parse-image';
 
 const { PNG } = png;
 
@@ -561,3 +562,5 @@ _this['resemble'] = function (file: File, options?: ResembleOptions): {
 };
 
 module.exports = _this['resemble']
+
+export { parseImage };
