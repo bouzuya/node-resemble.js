@@ -1,10 +1,6 @@
 import png = require('pngjs');
 
 export interface Result {
-  red: number;
-  green: number;
-  blue: number;
-  brightness: number;
   rawMisMatchPercentage: number;
   misMatchPercentage: string;
   analysisTime: number;
