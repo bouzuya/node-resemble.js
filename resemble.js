@@ -8,7 +8,6 @@ var PNG = require('pngjs').PNG;
 var fs = require('fs');
 var jpeg = require('jpeg-js');
 
-//keeping wrong indentation and '_this' for better diff with origin resemble.js
 var _this = {};
 
 var pixelTransparency = 1;
