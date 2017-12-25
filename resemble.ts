@@ -84,7 +84,6 @@ interface Resemble {
     compareTo: (secondFile: File) => CompareApi;
     onComplete: (callback: CompleteCallback) => void;
   };
-  outputSettings: (options: ResembleOptions) => Resemble;
 }
 
 var _this: { resemble: Resemble; } = {} as any;
@@ -120,10 +119,28 @@ var errorPixelTransform = {
 var errorPixelTransformer: ErrorPixelTransformer = errorPixelTransform.flat;
 var largeImageThreshold = 1200;
 
-_this['resemble'] = function (file: File): {
+_this['resemble'] = function (file: File, options?: ResembleOptions): {
   compareTo: (secondFile: File) => CompareApi;
   onComplete: (callback: CompleteCallback) => void;
 } {
+  // options start
+  var key: keyof Color;
+  var opts = options || {};
+  if (opts.errorColor) {
+    for (key in opts.errorColor) {
+      errorPixelColor[key] = typeof opts.errorColor[key] === 'undefined'
+        ? errorPixelColor[key]
+        : opts.errorColor[key];
+    }
+  }
+  if (opts.errorType && errorPixelTransform[opts.errorType]) {
+    errorPixelTransformer = errorPixelTransform[opts.errorType];
+  }
+  pixelTransparency = opts.transparency || pixelTransparency;
+  if (typeof opts.largeImageThreshold !== 'undefined') {
+    largeImageThreshold = opts.largeImageThreshold;
+  }
+  // options end
 
   var result: Partial<Result> = {};
   var images: Image[] = [];
@@ -649,29 +666,6 @@ _this['resemble'] = function (file: File): {
       return getCompareApi(secondFile);
     }
   };
-
-};
-
-_this['resemble'].outputSettings = function (options: ResembleOptions): Resemble {
-  var key: keyof Color;
-
-  if (options.errorColor) {
-    for (key in options.errorColor) {
-      errorPixelColor[key] = typeof options.errorColor[key] === 'undefined' ? errorPixelColor[key] : options.errorColor[key];
-    }
-  }
-
-  if (options.errorType && errorPixelTransform[options.errorType]) {
-    errorPixelTransformer = errorPixelTransform[options.errorType];
-  }
-
-  pixelTransparency = options.transparency || pixelTransparency;
-
-  if (typeof options.largeImageThreshold !== 'undefined') {
-    largeImageThreshold = options.largeImageThreshold;
-  }
-
-  return this;
 };
 
 module.exports = _this['resemble']
