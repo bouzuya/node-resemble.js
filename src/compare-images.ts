@@ -68,6 +68,14 @@ const isRGBSimilar = (p1: Pixel, p2: Pixel, tolerance: Tolerance): boolean => {
   return red && green && blue && alpha;
 };
 
+const isContrasting = (
+  p1: PixelWithBrightnessInfo,
+  p2: PixelWithBrightnessInfo,
+  tolerance: Tolerance
+): boolean => {
+  return Math.abs(p1.brightness - p2.brightness) > tolerance.maxBrightness;
+};
+
 const compareImages = (file1: File, file2: File, options?: ResembleOptions): Promise<CompareResult> => {
   var pixelTransparency = 1;
 
@@ -133,10 +141,6 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
   var ignoreColors = false;
   var ignoreRectangles: Rectangle[] | null = null;
 
-  function isContrasting(p1: PixelWithBrightnessInfo, p2: PixelWithBrightnessInfo): boolean {
-    return Math.abs(p1.brightness - p2.brightness) > tolerance.maxBrightness;
-  }
-
   function getHue(r: Byte, g: Byte, b: Byte): number {
     r = r / 255;
     g = g / 255;
@@ -190,7 +194,7 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
           addBrightnessInfo(targetPix);
           addHueInfo(targetPix as PixelWithBrightnessInfo);
 
-          if (isContrasting(sourcePix as PixelWithBrightnessAndHueInfo, targetPix as PixelWithBrightnessAndHueInfo)) {
+          if (isContrasting(sourcePix as PixelWithBrightnessAndHueInfo, targetPix as PixelWithBrightnessAndHueInfo, tolerance)) {
             hasHighContrastSibling++;
           }
 
