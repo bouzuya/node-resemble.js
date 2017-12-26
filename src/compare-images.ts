@@ -2,6 +2,7 @@ import jpeg = require('jpeg-js');
 import png = require('pngjs');
 import { Byte } from './type/byte';
 import { Color } from './type/color';
+import { CompareResult } from './type/compare-result';
 import { File } from './type/file';
 import { Image } from './type/image';
 import {
@@ -11,7 +12,7 @@ import {
 } from './type/pixel';
 import { Rectangle } from './type/rectangle';
 import { ResembleOptions } from './type/resemble-options';
-import { CompareResult } from './type/compare-result';
+import { Tolerance } from './type/tolerance';
 import { getBrightness } from './get-brightness';
 import { loadImageData } from './load-image-data';
 
@@ -25,6 +26,19 @@ const loop = (
       callback(y, x);
     }
   }
+};
+
+const isColorSimilar = (
+  b1: Byte,
+  b2: Byte,
+  color: keyof Tolerance,
+  tolerance: Tolerance
+): boolean => {
+  if (typeof b1 === 'undefined') return false;
+  if (typeof b2 === 'undefined') return false;
+  if (b1 === b2) return true;
+  if (Math.abs(b1 - b2) < tolerance[color]) return true;
+  return false;
 };
 
 const compareImages = (file1: File, file2: File, options?: ResembleOptions): Promise<CompareResult> => {
@@ -79,7 +93,7 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
   }
   // options end
 
-  var tolerance = { // between 0 and 255
+  var tolerance: Tolerance = { // between 0 and 255
     red: 16,
     green: 16,
     blue: 16,
@@ -92,29 +106,9 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
   var ignoreColors = false;
   var ignoreRectangles: Rectangle[] | null = null;
 
-  function isColorSimilar(a: Pixel['a'] | PixelWithBrightnessInfo['brightness'], b: Pixel['a'] | PixelWithBrightnessInfo['brightness'], color: 'red' | 'green' | 'blue' | 'alpha' | 'minBrightness'): boolean {
-
-    var absDiff = Math.abs(a - b);
-
-    if (typeof a === 'undefined') {
-      return false;
-    }
-    if (typeof b === 'undefined') {
-      return false;
-    }
-
-    if (a === b) {
-      return true;
-    } else if (absDiff < tolerance[color]) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
   function isPixelBrightnessSimilar(p1: PixelWithBrightnessInfo, p2: PixelWithBrightnessInfo): boolean {
-    var alpha = isColorSimilar(p1.a, p2.a, 'alpha');
-    var brightness = isColorSimilar(p1.brightness, p2.brightness, 'minBrightness');
+    var alpha = isColorSimilar(p1.a, p2.a, 'alpha', tolerance);
+    var brightness = isColorSimilar(p1.brightness, p2.brightness, 'minBrightness', tolerance);
     return brightness && alpha;
   }
 
@@ -126,10 +120,10 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
   }
 
   function isRGBSimilar(p1: Pixel, p2: Pixel): boolean {
-    var red = isColorSimilar(p1.r, p2.r, 'red');
-    var green = isColorSimilar(p1.g, p2.g, 'green');
-    var blue = isColorSimilar(p1.b, p2.b, 'blue');
-    var alpha = isColorSimilar(p1.a, p2.a, 'alpha');
+    var red = isColorSimilar(p1.r, p2.r, 'red', tolerance);
+    var green = isColorSimilar(p1.g, p2.g, 'green', tolerance);
+    var blue = isColorSimilar(p1.b, p2.b, 'blue', tolerance);
+    var alpha = isColorSimilar(p1.a, p2.a, 'alpha', tolerance);
 
     return red && green && blue && alpha;
   }
