@@ -53,6 +53,13 @@ const isPixelBrightnessSimilar = (
   return brightness && alpha;
 };
 
+const isRGBSame = (p1: Pixel, p2: Pixel): boolean => {
+  const red = p1.r === p2.r;
+  const green = p1.g === p2.g;
+  const blue = p1.b === p2.b;
+  return red && green && blue;
+};
+
 const compareImages = (file1: File, file2: File, options?: ResembleOptions): Promise<CompareResult> => {
   var pixelTransparency = 1;
 
@@ -117,13 +124,6 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
   var ignoreAntialiasing = false;
   var ignoreColors = false;
   var ignoreRectangles: Rectangle[] | null = null;
-
-  function isRGBSame(p1: Pixel, p2: Pixel) {
-    var red = p1.r === p2.r;
-    var green = p1.g === p2.g;
-    var blue = p1.b === p2.b;
-    return red && green && blue;
-  }
 
   function isRGBSimilar(p1: Pixel, p2: Pixel): boolean {
     var red = isColorSimilar(p1.r, p2.r, 'red', tolerance);
