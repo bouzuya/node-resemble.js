@@ -1,6 +1,6 @@
 import png = require('pngjs');
 
-export interface Result {
+export interface CompareResult {
   rawMisMatchPercentage: number;
   misMatchPercentage: string;
   analysisTime: number;
