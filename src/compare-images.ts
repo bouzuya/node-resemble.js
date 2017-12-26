@@ -41,6 +41,18 @@ const isColorSimilar = (
   return false;
 };
 
+const isPixelBrightnessSimilar = (
+  p1: PixelWithBrightnessInfo,
+  p2: PixelWithBrightnessInfo,
+  tolerance: Tolerance
+): boolean => {
+  const alpha = isColorSimilar(p1.a, p2.a, 'alpha', tolerance);
+  const brightness = isColorSimilar(
+    p1.brightness, p2.brightness, 'minBrightness', tolerance
+  );
+  return brightness && alpha;
+};
+
 const compareImages = (file1: File, file2: File, options?: ResembleOptions): Promise<CompareResult> => {
   var pixelTransparency = 1;
 
@@ -105,12 +117,6 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
   var ignoreAntialiasing = false;
   var ignoreColors = false;
   var ignoreRectangles: Rectangle[] | null = null;
-
-  function isPixelBrightnessSimilar(p1: PixelWithBrightnessInfo, p2: PixelWithBrightnessInfo): boolean {
-    var alpha = isColorSimilar(p1.a, p2.a, 'alpha', tolerance);
-    var brightness = isColorSimilar(p1.brightness, p2.brightness, 'minBrightness', tolerance);
-    return brightness && alpha;
-  }
 
   function isRGBSame(p1: Pixel, p2: Pixel) {
     var red = p1.r === p2.r;
@@ -344,7 +350,7 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
         addBrightnessInfo(pixel1);
         addBrightnessInfo(pixel2);
 
-        if (isPixelBrightnessSimilar(pixel1 as PixelWithBrightnessInfo, pixel2 as PixelWithBrightnessInfo)) {
+        if (isPixelBrightnessSimilar(pixel1 as PixelWithBrightnessInfo, pixel2 as PixelWithBrightnessInfo, tolerance)) {
           copyGrayScalePixel(targetPix, offset, pixel2 as PixelWithBrightnessInfo);
         } else {
           errorPixel(targetPix, offset, pixel1 as PixelWithBrightnessInfo, pixel2 as PixelWithBrightnessInfo);
@@ -363,7 +369,7 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
         isAntialiased(pixel2 as PixelWithBrightnessInfo, imageData2, 2, y, x, width)
       )) {
 
-        if (isPixelBrightnessSimilar(pixel1 as PixelWithBrightnessInfo, pixel2 as PixelWithBrightnessInfo)) {
+        if (isPixelBrightnessSimilar(pixel1 as PixelWithBrightnessInfo, pixel2 as PixelWithBrightnessInfo, tolerance)) {
           copyGrayScalePixel(targetPix, offset, pixel2 as PixelWithBrightnessInfo);
         } else {
           errorPixel(targetPix, offset, pixel1 as PixelWithBrightnessInfo, pixel2 as PixelWithBrightnessInfo);
