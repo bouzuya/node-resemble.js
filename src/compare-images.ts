@@ -401,17 +401,6 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
     };
   }
 
-  function compare(one: File, two: File): Promise<CompareResult> {
-    return Promise
-      .all([loadImageData(one), loadImageData(two)])
-      .then(([image1, image2]: [Image, Image]) => {
-        var width = image1.width > image2.width ? image1.width : image2.width;
-        var height = image1.height > image2.height ? image1.height : image2.height;
-        //lksv: normalization removed
-        return analyseImages(image1, image2, width, height);
-      });
-  }
-
   if (typeof opts.ignoreAntialiasing !== 'undefined' && opts.ignoreAntialiasing) {
     tolerance.red = 32;
     tolerance.green = 32;
@@ -446,7 +435,14 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
     ignoreRectangles = opts.ignoreRectangles;
   }
 
-  return compare(file1, file2);
+  return Promise
+    .all([loadImageData(file1), loadImageData(file2)])
+    .then(([image1, image2]: [Image, Image]) => {
+      var width = image1.width > image2.width ? image1.width : image2.width;
+      var height = image1.height > image2.height ? image1.height : image2.height;
+      //lksv: normalization removed
+      return analyseImages(image1, image2, width, height);
+    });
 };
 
 export { compareImages };
