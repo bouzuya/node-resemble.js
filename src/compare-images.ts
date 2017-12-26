@@ -60,6 +60,14 @@ const isRGBSame = (p1: Pixel, p2: Pixel): boolean => {
   return red && green && blue;
 };
 
+const isRGBSimilar = (p1: Pixel, p2: Pixel, tolerance: Tolerance): boolean => {
+  const red = isColorSimilar(p1.r, p2.r, 'red', tolerance);
+  const green = isColorSimilar(p1.g, p2.g, 'green', tolerance);
+  const blue = isColorSimilar(p1.b, p2.b, 'blue', tolerance);
+  const alpha = isColorSimilar(p1.a, p2.a, 'alpha', tolerance);
+  return red && green && blue && alpha;
+};
+
 const compareImages = (file1: File, file2: File, options?: ResembleOptions): Promise<CompareResult> => {
   var pixelTransparency = 1;
 
@@ -124,15 +132,6 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
   var ignoreAntialiasing = false;
   var ignoreColors = false;
   var ignoreRectangles: Rectangle[] | null = null;
-
-  function isRGBSimilar(p1: Pixel, p2: Pixel): boolean {
-    var red = isColorSimilar(p1.r, p2.r, 'red', tolerance);
-    var green = isColorSimilar(p1.g, p2.g, 'green', tolerance);
-    var blue = isColorSimilar(p1.b, p2.b, 'blue', tolerance);
-    var alpha = isColorSimilar(p1.a, p2.a, 'alpha', tolerance);
-
-    return red && green && blue && alpha;
-  }
 
   function isContrasting(p1: PixelWithBrightnessInfo, p2: PixelWithBrightnessInfo): boolean {
     return Math.abs(p1.brightness - p2.brightness) > tolerance.maxBrightness;
@@ -359,7 +358,7 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
         return;
       }
 
-      if (isRGBSimilar(pixel1, pixel2)) {
+      if (isRGBSimilar(pixel1, pixel2, tolerance)) {
         copyPixel(targetPix, offset, pixel1, pixel2);
 
       } else if (ignoreAntialiasing && (
