@@ -15,6 +15,18 @@ import { CompareResult } from './type/compare-result';
 import { getBrightness } from './get-brightness';
 import { loadImageData } from './load-image-data';
 
+const loop = (
+  height: number,
+  width: number,
+  callback: (y: number, x: number) => void
+): void => {
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      callback(y, x);
+    }
+  }
+};
+
 const compareImages = (file1: File, file2: File, options?: ResembleOptions): Promise<CompareResult> => {
   var pixelTransparency = 1;
 
@@ -79,15 +91,6 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
   var ignoreAntialiasing = false;
   var ignoreColors = false;
   var ignoreRectangles: Rectangle[] | null = null;
-
-  function loop(height: number, width: number, callback: (y: number, x: number) => void): void {
-    var y, x;
-    for (y = 0; y < height; y++) {
-      for (x = 0; x < width; x++) {
-        callback(y, x);
-      }
-    }
-  }
 
   function isColorSimilar(a: Pixel['a'] | PixelWithBrightnessInfo['brightness'], b: Pixel['a'] | PixelWithBrightnessInfo['brightness'], color: 'red' | 'green' | 'blue' | 'alpha' | 'minBrightness'): boolean {
 
