@@ -15,7 +15,7 @@ import { CompareResult } from './type/compare-result';
 import { getBrightness } from './get-brightness';
 import { loadImageData } from './load-image-data';
 
-const compareImages = (file: File, secondFile: File, options?: ResembleOptions): Promise<CompareResult> => {
+const compareImages = (file1: File, file2: File, options?: ResembleOptions): Promise<CompareResult> => {
   var pixelTransparency = 1;
 
   var errorPixelColor: Color = { // Color for Error Pixels. Between 0 and 255.
@@ -446,7 +446,7 @@ const compareImages = (file: File, secondFile: File, options?: ResembleOptions):
     ignoreRectangles = opts.ignoreRectangles;
   }
 
-  return compare(file, secondFile);
+  return compare(file1, file2);
 };
 
 export { compareImages };
