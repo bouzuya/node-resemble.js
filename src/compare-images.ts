@@ -106,6 +106,17 @@ const setPixel = (
   buffer[offset + 3] = a;
 };
 
+const copyErrorPixel = (
+  px: Buffer,
+  offset: number,
+  p1: Pixel,
+  p2: Pixel,
+  errorPixelTransformer: (p1: Pixel, p2: Pixel) => Pixel
+): void => {
+  const p = errorPixelTransformer(p1, p2);
+  setPixel(px, offset, p.r, p.g, p.b, p.a);
+};
+
 const compareImages = (file1: File, file2: File, options?: ResembleOptions): Promise<CompareResult> => {
   var pixelTransparency = 1;
 
@@ -224,11 +235,6 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
     }
 
     return false;
-  }
-
-  function errorPixel(px: Buffer, offset: number, p1: Pixel, p2: Pixel): void {
-    var p = errorPixelTransformer(p1, p2);
-    setPixel(px, offset, p.r, p.g, p.b, p.a);
   }
 
   // ? copyPixel(px: Buffer, offset: number, p1: Pixel, p2: Pixel): void
@@ -353,7 +359,7 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
         if (isPixelBrightnessSimilar(pixel1 as PixelWithBrightnessInfo, pixel2 as PixelWithBrightnessInfo, tolerance)) {
           copyGrayScalePixel(targetPix, offset, pixel2 as PixelWithBrightnessInfo);
         } else {
-          errorPixel(targetPix, offset, pixel1 as PixelWithBrightnessInfo, pixel2 as PixelWithBrightnessInfo);
+          copyErrorPixel(targetPix, offset, pixel1 as PixelWithBrightnessInfo, pixel2 as PixelWithBrightnessInfo, errorPixelTransformer);
           mismatchCount++;
         }
         return;
@@ -372,11 +378,11 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
         if (isPixelBrightnessSimilar(pixel1 as PixelWithBrightnessInfo, pixel2 as PixelWithBrightnessInfo, tolerance)) {
           copyGrayScalePixel(targetPix, offset, pixel2 as PixelWithBrightnessInfo);
         } else {
-          errorPixel(targetPix, offset, pixel1 as PixelWithBrightnessInfo, pixel2 as PixelWithBrightnessInfo);
+          copyErrorPixel(targetPix, offset, pixel1 as PixelWithBrightnessInfo, pixel2 as PixelWithBrightnessInfo, errorPixelTransformer);
           mismatchCount++;
         }
       } else {
-        errorPixel(targetPix, offset, pixel1 as PixelWithBrightnessInfo, pixel2 as PixelWithBrightnessInfo);
+        copyErrorPixel(targetPix, offset, pixel1 as PixelWithBrightnessInfo, pixel2 as PixelWithBrightnessInfo, errorPixelTransformer);
         mismatchCount++;
       }
 
