@@ -208,6 +208,129 @@ const isAntialiased = (
   return hasEquivilantSibling < 2;
 };
 
+const analyseImages = (
+  image1: Image,
+  image2: Image,
+  width: number,
+  height: number,
+  largeImageThreshold: number,
+  ignoreAntialiasing: boolean,
+  ignoreColors: boolean,
+  ignoreRectangles: Rectangle[] | null,
+  pixelTransparency: number,
+  tolerance: Tolerance,
+  errorPixelTransformer: (p1: Pixel, p2: Pixel) => Pixel
+): CompareResult => {
+  const imageData1 = image1.data;
+  const imageData2 = image2.data;
+  //TODO
+  const image = new png.PNG({
+    width: image1.width,
+    height: image1.height,
+    deflateChunkSize: image1.deflateChunkSize,
+    deflateLevel: image1.deflateLevel,
+    deflateStrategy: image1.deflateStrategy,
+  });
+  const targetPix = image.data;
+  let mismatchCount = 0;
+  const time = Date.now();
+  let skip: number | undefined;
+  let currentRectangle = null;
+  if (!!largeImageThreshold && ignoreAntialiasing && (width > largeImageThreshold || height > largeImageThreshold)) {
+    skip = 6;
+  }
+
+  loop(height, width, function (y, x) {
+    const offset = (y * width + x) * 4;
+    if (skip) { // only skip if the image isn't small
+      if (y % skip === 0 || x % skip === 0) {
+        copyPixel(targetPix, offset, {
+          r: 0,
+          b: 0,
+          g: 0,
+          a: 0
+        }, pixelTransparency);
+        return;
+      }
+    }
+
+    const pixel1 = getPixel(imageData1, offset);
+    const pixel2 = getPixel(imageData2, offset);
+    if (pixel1 === null || pixel2 === null) return;
+    if (ignoreRectangles) {
+      for (let rectagnlesIdx = 0; rectagnlesIdx < ignoreRectangles.length; rectagnlesIdx++) {
+        currentRectangle = ignoreRectangles[rectagnlesIdx];
+        //console.log(currentRectangle, y, x);
+        if (
+          (y >= currentRectangle[1]) &&
+          (y < currentRectangle[1] + currentRectangle[3]) &&
+          (x >= currentRectangle[0]) &&
+          (x < currentRectangle[0] + currentRectangle[2])
+        ) {
+          const pixel2_ = pixel2 as PixelWithBrightnessInfo; // FIXME: addBrightnessInfo(pixel2) has not been called yet
+          copyGrayScalePixel(targetPix, offset, pixel2_, pixelTransparency); // ? pixel2.brightness is not defined
+          //copyPixel(targetPix, offset, pixel1, pixelTransparency);
+          return;
+        }
+      }
+    }
+
+    if (ignoreColors) {
+      const pixel1WithBrightness = toPixelWithBrightness(pixel1);
+      const pixel2WithBrightness = toPixelWithBrightness(pixel2);
+      if (isPixelBrightnessSimilar(pixel1WithBrightness, pixel2WithBrightness, tolerance)) {
+        copyGrayScalePixel(targetPix, offset, pixel2WithBrightness, pixelTransparency);
+      } else {
+        copyErrorPixel(targetPix, offset, pixel1WithBrightness, pixel2WithBrightness, errorPixelTransformer);
+        mismatchCount++;
+      }
+    } else if (isRGBSimilar(pixel1, pixel2, tolerance)) {
+      copyPixel(targetPix, offset, pixel1, pixelTransparency);
+    } else if (ignoreAntialiasing) {
+      const pixel1WithBrightness = toPixelWithBrightness(pixel1); // jit pixel info augmentation looks a little weird, sorry.
+      const pixel2WithBrightness = toPixelWithBrightness(pixel2);
+      if (
+        isAntialiased(pixel1WithBrightness, imageData1, y, x, width, tolerance) ||
+        isAntialiased(pixel2WithBrightness, imageData2, y, x, width, tolerance)
+      ) {
+        if (isPixelBrightnessSimilar(pixel1WithBrightness, pixel2WithBrightness, tolerance)) {
+          copyGrayScalePixel(targetPix, offset, pixel2WithBrightness, pixelTransparency);
+        } else {
+          copyErrorPixel(targetPix, offset, pixel1WithBrightness, pixel2WithBrightness, errorPixelTransformer);
+          mismatchCount++;
+        }
+      } else {
+        copyErrorPixel(targetPix, offset, pixel1WithBrightness, pixel2WithBrightness, errorPixelTransformer);
+        mismatchCount++;
+      }
+    } else {
+      copyErrorPixel(targetPix, offset, pixel1, pixel2, errorPixelTransformer);
+      mismatchCount++;
+    }
+  });
+
+  const rawMisMatchPercentage = (mismatchCount / (height * width) * 100);
+  return {
+    isSameDimensions:
+      image1.width === image2.width && image1.height === image2.height,
+    dimensionDifference: {
+      width: image1.width - image2.width,
+      height: image1.height - image2.height
+    },
+    rawMisMatchPercentage,
+    misMatchPercentage: rawMisMatchPercentage.toFixed(2),
+    analysisTime: Date.now() - time,
+    getDiffImage: function (_text) { return image; },
+    getDiffImageAsJPEG: function (quality) {
+      return jpeg.encode({
+        data: targetPix,
+        width: image1.width,
+        height: image1.height
+      }, typeof quality !== 'undefined' ? quality : 50).data;
+    }
+  };
+};
+
 const compareImages = (file1: File, file2: File, options?: ResembleOptions): Promise<CompareResult> => {
   var pixelTransparency = 1;
 
@@ -273,136 +396,6 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
   var ignoreColors = false;
   var ignoreRectangles: Rectangle[] | null = null;
 
-  function analyseImages(image1: Image, image2: Image, width: number, height: number): CompareResult {
-
-    var imageData1 = image1.data;
-    var imageData2 = image2.data;
-
-    //TODO
-    var image = new png.PNG({
-      width: image1.width,
-      height: image1.height,
-      deflateChunkSize: image1.deflateChunkSize,
-      deflateLevel: image1.deflateLevel,
-      deflateStrategy: image1.deflateStrategy,
-    });
-    var targetPix = image.data;
-
-    var mismatchCount = 0;
-
-    var time = Date.now();
-
-    var skip: number | undefined;
-
-    var currentRectangle = null;
-    var rectagnlesIdx = 0;
-
-    if (!!largeImageThreshold && ignoreAntialiasing && (width > largeImageThreshold || height > largeImageThreshold)) {
-      skip = 6;
-    }
-
-    loop(height, width, function (y, x) {
-      var offset = (y * width + x) * 4;
-
-      if (skip) { // only skip if the image isn't small
-        if (y % skip === 0 || x % skip === 0) {
-
-          copyPixel(targetPix, offset, {
-            r: 0,
-            b: 0,
-            g: 0,
-            a: 0
-          }, pixelTransparency);
-
-          return;
-        }
-      }
-
-      var pixel1 = getPixel(imageData1, offset);
-      var pixel2 = getPixel(imageData2, offset);
-
-      if (pixel1 === null || pixel2 === null) {
-        return;
-      }
-
-      if (ignoreRectangles) {
-        for (rectagnlesIdx = 0; rectagnlesIdx < ignoreRectangles.length; rectagnlesIdx++) {
-          currentRectangle = ignoreRectangles[rectagnlesIdx];
-          //console.log(currentRectangle, y, x);
-          if (
-            (y >= currentRectangle[1]) &&
-            (y < currentRectangle[1] + currentRectangle[3]) &&
-            (x >= currentRectangle[0]) &&
-            (x < currentRectangle[0] + currentRectangle[2])
-          ) {
-            const pixel2_ = pixel2 as PixelWithBrightnessInfo; // FIXME: addBrightnessInfo(pixel2) has not been called yet
-            copyGrayScalePixel(targetPix, offset, pixel2_, pixelTransparency); // ? pixel2.brightness is not defined
-            //copyPixel(targetPix, offset, pixel1, pixelTransparency);
-            return;
-          }
-        }
-      }
-
-      if (ignoreColors) {
-        const pixel1WithBrightness = toPixelWithBrightness(pixel1);
-        const pixel2WithBrightness = toPixelWithBrightness(pixel2);
-        if (isPixelBrightnessSimilar(pixel1WithBrightness, pixel2WithBrightness, tolerance)) {
-          copyGrayScalePixel(targetPix, offset, pixel2WithBrightness, pixelTransparency);
-        } else {
-          copyErrorPixel(targetPix, offset, pixel1WithBrightness, pixel2WithBrightness, errorPixelTransformer);
-          mismatchCount++;
-        }
-        return;
-      }
-
-      if (isRGBSimilar(pixel1, pixel2, tolerance)) {
-        copyPixel(targetPix, offset, pixel1, pixelTransparency);
-
-      } else if (ignoreAntialiasing) {
-        const pixel1WithBrightness = toPixelWithBrightness(pixel1); // jit pixel info augmentation looks a little weird, sorry.
-        const pixel2WithBrightness = toPixelWithBrightness(pixel2);
-        if (
-          isAntialiased(pixel1WithBrightness, imageData1, y, x, width, tolerance) ||
-          isAntialiased(pixel2WithBrightness, imageData2, y, x, width, tolerance)
-        ) {
-          if (isPixelBrightnessSimilar(pixel1WithBrightness, pixel2WithBrightness, tolerance)) {
-            copyGrayScalePixel(targetPix, offset, pixel2WithBrightness, pixelTransparency);
-          } else {
-            copyErrorPixel(targetPix, offset, pixel1WithBrightness, pixel2WithBrightness, errorPixelTransformer);
-            mismatchCount++;
-          }
-        } else {
-          copyErrorPixel(targetPix, offset, pixel1WithBrightness, pixel2WithBrightness, errorPixelTransformer);
-          mismatchCount++;
-        }
-      } else {
-        copyErrorPixel(targetPix, offset, pixel1, pixel2, errorPixelTransformer);
-        mismatchCount++;
-      }
-    });
-
-    const rawMisMatchPercentage = (mismatchCount / (height * width) * 100);
-    return {
-      isSameDimensions:
-        image1.width === image2.width && image1.height === image2.height,
-      dimensionDifference: {
-        width: image1.width - image2.width,
-        height: image1.height - image2.height
-      },
-      rawMisMatchPercentage,
-      misMatchPercentage: rawMisMatchPercentage.toFixed(2),
-      analysisTime: Date.now() - time,
-      getDiffImage: function (_text) { return image; },
-      getDiffImageAsJPEG: function (quality) {
-        return jpeg.encode({
-          data: targetPix,
-          width: image1.width,
-          height: image1.height
-        }, typeof quality !== 'undefined' ? quality : 50).data;
-      }
-    };
-  }
-
   if (typeof opts.ignoreAntialiasing !== 'undefined' && opts.ignoreAntialiasing) {
     tolerance.red = 32;
     tolerance.green = 32;
@@ -443,7 +436,19 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
       var width = image1.width > image2.width ? image1.width : image2.width;
       var height = image1.height > image2.height ? image1.height : image2.height;
       //lksv: normalization removed
-      return analyseImages(image1, image2, width, height);
+      return analyseImages(
+        image1,
+        image2,
+        width,
+        height,
+        largeImageThreshold,
+        ignoreAntialiasing,
+        ignoreColors,
+        ignoreRectangles,
+        pixelTransparency,
+        tolerance,
+        errorPixelTransformer
+      );
     });
 };
 
