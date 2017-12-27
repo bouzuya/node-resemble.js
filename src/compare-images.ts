@@ -149,7 +149,6 @@ const copyGrayScalePixel = (
   setRGBA(px, offset, p.brightness, p.brightness, p.brightness, p.a * pixelTransparency);
 };
 
-// convert Pixel to PixelWithBrightnessInfo
 const toPixelWithBrightness = (p: Pixel): PixelWithBrightnessInfo => {
   return {
     r: p.r,
@@ -157,6 +156,17 @@ const toPixelWithBrightness = (p: Pixel): PixelWithBrightnessInfo => {
     b: p.b,
     a: p.a,
     brightness: getBrightness(p.r, p.g, p.b) // 'corrected' lightness
+  };
+};
+
+const toPixelWithBrightnessAndHue = (p: PixelWithBrightnessInfo): PixelWithBrightnessAndHueInfo => {
+  return {
+    r: p.r,
+    g: p.g,
+    b: p.b,
+    a: p.a,
+    brightness: p.brightness,
+    h: getHue(p.r, p.g, p.b),
   };
 };
 
@@ -235,7 +245,7 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
     var hasSiblingWithDifferentHue = 0;
     var hasEquivilantSibling = 0;
 
-    addHueInfo(sourcePix);
+    const sourcePixWithBrightnessAndHue = toPixelWithBrightnessAndHue(sourcePix);
 
     for (i = distance * -1; i <= distance; i++) {
       for (j = distance * -1; j <= distance; j++) {
@@ -252,17 +262,17 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
           }
 
           const targetPixWithBrightness = toPixelWithBrightness(targetPix);
-          addHueInfo(targetPixWithBrightness as PixelWithBrightnessInfo);
+          const targetPixWithBrightnessAndHue = toPixelWithBrightnessAndHue(targetPixWithBrightness);
 
-          if (isContrasting(sourcePix as PixelWithBrightnessAndHueInfo, targetPixWithBrightness as PixelWithBrightnessAndHueInfo, tolerance)) {
+          if (isContrasting(sourcePixWithBrightnessAndHue, targetPixWithBrightnessAndHue, tolerance)) {
             hasHighContrastSibling++;
           }
 
-          if (isRGBSame(sourcePix as PixelWithBrightnessAndHueInfo, targetPixWithBrightness as PixelWithBrightnessAndHueInfo)) {
+          if (isRGBSame(sourcePixWithBrightnessAndHue, targetPixWithBrightnessAndHue)) {
             hasEquivilantSibling++;
           }
 
-          if (Math.abs((targetPixWithBrightness as PixelWithBrightnessAndHueInfo).h - (sourcePix as PixelWithBrightnessAndHueInfo).h) > 0.3) {
+          if (Math.abs(targetPixWithBrightnessAndHue.h - sourcePixWithBrightnessAndHue.h) > 0.3) {
             hasSiblingWithDifferentHue++;
           }
 
@@ -278,11 +288,6 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
     }
 
     return false;
-  }
-
-  // convert PixelWithBrightnessInfo to PixelWithBrightnessAndHueInfo
-  function addHueInfo(p: PixelWithBrightnessInfo): void {
-    (p as PixelWithBrightnessAndHueInfo).h = getHue(p.r, p.g, p.b);
   }
 
   function analyseImages(image1: Image, image2: Image, width: number, height: number): CompareResult {
