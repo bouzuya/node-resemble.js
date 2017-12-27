@@ -170,6 +170,44 @@ const toPixelWithBrightnessAndHue = (p: PixelWithBrightnessInfo): PixelWithBrigh
   };
 };
 
+const isAntialiased = (
+  sourcePix: PixelWithBrightnessInfo,
+  imageData: Buffer,
+  y: number,
+  x: number,
+  width: number,
+  tolerance: Tolerance
+): boolean => {
+  let distance = 1;
+  let hasHighContrastSibling = 0;
+  let hasSiblingWithDifferentHue = 0;
+  let hasEquivilantSibling = 0;
+  const sourcePixWithBrightnessAndHue = toPixelWithBrightnessAndHue(sourcePix);
+  for (let i = distance * -1; i <= distance; i++) {
+    for (let j = distance * -1; j <= distance; j++) {
+      if (i === 0 && j === 0) continue; // ignore source pixel
+      const offset = ((y + j) * width + (x + i)) * 4;
+      const targetPix = getPixel(imageData, offset);
+      if (targetPix === null) continue;
+      const targetPixWithBrightness = toPixelWithBrightness(targetPix);
+      const targetPixWithBrightnessAndHue = toPixelWithBrightnessAndHue(targetPixWithBrightness);
+      if (isContrasting(sourcePixWithBrightnessAndHue, targetPixWithBrightnessAndHue, tolerance)) {
+        hasHighContrastSibling++;
+      }
+      if (isRGBSame(sourcePixWithBrightnessAndHue, targetPixWithBrightnessAndHue)) {
+        hasEquivilantSibling++;
+      }
+      if (Math.abs(targetPixWithBrightnessAndHue.h - sourcePixWithBrightnessAndHue.h) > 0.3) {
+        hasSiblingWithDifferentHue++;
+      }
+      if (hasSiblingWithDifferentHue > 1 || hasHighContrastSibling > 1) {
+        return true;
+      }
+    }
+  }
+  return hasEquivilantSibling < 2;
+};
+
 const compareImages = (file1: File, file2: File, options?: ResembleOptions): Promise<CompareResult> => {
   var pixelTransparency = 1;
 
@@ -234,61 +272,6 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
   var ignoreAntialiasing = false;
   var ignoreColors = false;
   var ignoreRectangles: Rectangle[] | null = null;
-
-  function isAntialiased(sourcePix: PixelWithBrightnessInfo, imageData: Buffer, y: number, x: number, width: number): boolean {
-    var offset;
-    var targetPix;
-    var distance = 1;
-    var i;
-    var j;
-    var hasHighContrastSibling = 0;
-    var hasSiblingWithDifferentHue = 0;
-    var hasEquivilantSibling = 0;
-
-    const sourcePixWithBrightnessAndHue = toPixelWithBrightnessAndHue(sourcePix);
-
-    for (i = distance * -1; i <= distance; i++) {
-      for (j = distance * -1; j <= distance; j++) {
-
-        if (i === 0 && j === 0) {
-          // ignore source pixel
-        } else {
-
-          offset = ((y + j) * width + (x + i)) * 4;
-          targetPix = getPixel(imageData, offset);
-
-          if (targetPix === null) {
-            continue;
-          }
-
-          const targetPixWithBrightness = toPixelWithBrightness(targetPix);
-          const targetPixWithBrightnessAndHue = toPixelWithBrightnessAndHue(targetPixWithBrightness);
-
-          if (isContrasting(sourcePixWithBrightnessAndHue, targetPixWithBrightnessAndHue, tolerance)) {
-            hasHighContrastSibling++;
-          }
-
-          if (isRGBSame(sourcePixWithBrightnessAndHue, targetPixWithBrightnessAndHue)) {
-            hasEquivilantSibling++;
-          }
-
-          if (Math.abs(targetPixWithBrightnessAndHue.h - sourcePixWithBrightnessAndHue.h) > 0.3) {
-            hasSiblingWithDifferentHue++;
-          }
-
-          if (hasSiblingWithDifferentHue > 1 || hasHighContrastSibling > 1) {
-            return true;
-          }
-        }
-      }
-    }
-
-    if (hasEquivilantSibling < 2) {
-      return true;
-    }
-
-    return false;
-  }
 
   function analyseImages(image1: Image, image2: Image, width: number, height: number): CompareResult {
 
@@ -379,8 +362,8 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
         const pixel1WithBrightness = toPixelWithBrightness(pixel1); // jit pixel info augmentation looks a little weird, sorry.
         const pixel2WithBrightness = toPixelWithBrightness(pixel2);
         if (
-          isAntialiased(pixel1WithBrightness, imageData1, y, x, width) ||
-          isAntialiased(pixel2WithBrightness, imageData2, y, x, width)
+          isAntialiased(pixel1WithBrightness, imageData1, y, x, width, tolerance) ||
+          isAntialiased(pixel2WithBrightness, imageData2, y, x, width, tolerance)
         ) {
           if (isPixelBrightnessSimilar(pixel1WithBrightness, pixel2WithBrightness, tolerance)) {
             copyGrayScalePixel(targetPix, offset, pixel2WithBrightness, pixelTransparency);
