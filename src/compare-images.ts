@@ -92,6 +92,17 @@ const getHue = (r: Byte, g: Byte, b: Byte): number => {
   }
 };
 
+const getPixel = (px: Buffer, offset: number): Pixel | null => {
+  const r = px[offset];
+  if (typeof r === 'undefined') return null;
+  return {
+    r: r,
+    g: px[offset + 1],
+    b: px[offset + 2],
+    a: px[offset + 3]
+  };
+};
+
 const setPixel = (
   buffer: Buffer,
   offset: number,
@@ -200,7 +211,7 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
   var ignoreColors = false;
   var ignoreRectangles: Rectangle[] | null = null;
 
-  function isAntialiased(sourcePix: PixelWithBrightnessInfo, imageData: Buffer, cacheSet: 1 | 2, y: number, x: number, width: number): boolean {
+  function isAntialiased(sourcePix: PixelWithBrightnessInfo, imageData: Buffer, y: number, x: number, width: number): boolean {
     var offset;
     var targetPix;
     var distance = 1;
@@ -220,7 +231,7 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
         } else {
 
           offset = ((y + j) * width + (x + i)) * 4;
-          targetPix = getPixelInfo(imageData, offset, cacheSet);
+          targetPix = getPixel(imageData, offset);
 
           if (targetPix === null) {
             continue;
@@ -253,32 +264,6 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
     }
 
     return false;
-  }
-
-  function getPixelInfo(imageData: Buffer, offset: number, _cacheSet: 1 | 2): Pixel | null {
-    var r;
-    var g;
-    var b;
-    var d;
-    var a;
-
-    r = imageData[offset];
-
-    if (typeof r !== 'undefined') {
-      g = imageData[offset + 1];
-      b = imageData[offset + 2];
-      a = imageData[offset + 3];
-      d = {
-        r: r,
-        g: g,
-        b: b,
-        a: a
-      };
-
-      return d;
-    } else {
-      return null;
-    }
   }
 
   // convert Pixel to PixelWithBrightnessInfo
@@ -336,8 +321,8 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
         }
       }
 
-      var pixel1 = getPixelInfo(imageData1, offset, 1);
-      var pixel2 = getPixelInfo(imageData2, offset, 2);
+      var pixel1 = getPixel(imageData1, offset);
+      var pixel2 = getPixel(imageData2, offset);
 
       if (pixel1 === null || pixel2 === null) {
         return;
@@ -381,8 +366,8 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
       } else if (ignoreAntialiasing && (
         addBrightnessInfo(pixel1), // jit pixel info augmentation looks a little weird, sorry.
         addBrightnessInfo(pixel2),
-        isAntialiased(pixel1 as PixelWithBrightnessInfo, imageData1, 1, y, x, width) ||
-        isAntialiased(pixel2 as PixelWithBrightnessInfo, imageData2, 2, y, x, width)
+        isAntialiased(pixel1 as PixelWithBrightnessInfo, imageData1, y, x, width) ||
+        isAntialiased(pixel2 as PixelWithBrightnessInfo, imageData2, y, x, width)
       )) {
 
         if (isPixelBrightnessSimilar(pixel1 as PixelWithBrightnessInfo, pixel2 as PixelWithBrightnessInfo, tolerance)) {
