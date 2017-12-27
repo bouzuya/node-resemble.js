@@ -92,6 +92,20 @@ const getHue = (r: Byte, g: Byte, b: Byte): number => {
   }
 };
 
+const setPixel = (
+  buffer: Buffer,
+  offset: number,
+  r: Byte,
+  g: Byte,
+  b: Byte,
+  a: Byte
+): void => {
+  buffer[offset] = r;
+  buffer[offset + 1] = g;
+  buffer[offset + 2] = b;
+  buffer[offset + 3] = a;
+};
+
 const compareImages = (file1: File, file2: File, options?: ResembleOptions): Promise<CompareResult> => {
   var pixelTransparency = 1;
 
@@ -214,25 +228,16 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
 
   function errorPixel(px: Buffer, offset: number, p1: Pixel, p2: Pixel): void {
     var p = errorPixelTransformer(p1, p2);
-    px[offset] = p.r;
-    px[offset + 1] = p.g;
-    px[offset + 2] = p.b;
-    px[offset + 3] = p.a;
+    setPixel(px, offset, p.r, p.g, p.b, p.a);
   }
 
   // ? copyPixel(px: Buffer, offset: number, p1: Pixel, p2: Pixel): void
   function copyPixel(px: Buffer, offset: number, p1: Pixel): void {
-    px[offset] = p1.r; //r
-    px[offset + 1] = p1.g; //g
-    px[offset + 2] = p1.b; //b
-    px[offset + 3] = p1.a * pixelTransparency; //a
+    setPixel(px, offset, p1.r, p1.g, p1.b, p1.a * pixelTransparency);
   }
 
   function copyGrayScalePixel(px: Buffer, offset: number, p: Pixel): void {
-    px[offset] = p.brightness; //r
-    px[offset + 1] = p.brightness; //g
-    px[offset + 2] = p.brightness; //b
-    px[offset + 3] = p.a * pixelTransparency; //a
+    setPixel(px, offset, p.brightness, p.brightness, p.brightness, p.a * pixelTransparency);
   }
 
   function getPixelInfo(imageData: Buffer, offset: number, _cacheSet: 1 | 2): Pixel | null {
