@@ -76,6 +76,22 @@ const isContrasting = (
   return Math.abs(p1.brightness - p2.brightness) > tolerance.maxBrightness;
 };
 
+const getHue = (r: Byte, g: Byte, b: Byte): number => {
+  const r1 = r / 255;
+  const g1 = g / 255;
+  const b1 = b / 255;
+  const max = Math.max(r1, g1, b1);
+  const min = Math.min(r1, g1, b1);
+  if (max == min) return 0; // achromatic
+  const d = max - min;
+  switch (max) {
+    case r1: return ((g1 - b1) / d + (g1 < b1 ? 6 : 0)) / 6;
+    case g1: return ((b1 - r1) / d + 2) / 6;
+    case b1: return ((r1 - g1) / d + 4) / 6;
+    default: throw new Error('assert max is r or g or b');
+  }
+};
+
 const compareImages = (file1: File, file2: File, options?: ResembleOptions): Promise<CompareResult> => {
   var pixelTransparency = 1;
 
@@ -140,30 +156,6 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
   var ignoreAntialiasing = false;
   var ignoreColors = false;
   var ignoreRectangles: Rectangle[] | null = null;
-
-  function getHue(r: Byte, g: Byte, b: Byte): number {
-    r = r / 255;
-    g = g / 255;
-    b = b / 255;
-    var max = Math.max(r, g, b), min = Math.min(r, g, b);
-    var h: number;
-    var d;
-
-    if (max == min) {
-      h = 0; // achromatic
-    } else {
-      d = max - min;
-      switch (max) {
-        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-        case g: h = (b - r) / d + 2; break;
-        case b: h = (r - g) / d + 4; break;
-        default: throw new Error('assert max is r or g or b');
-      }
-      h /= 6;
-    }
-
-    return h;
-  }
 
   function isAntialiased(sourcePix: PixelWithBrightnessInfo, imageData: Buffer, cacheSet: 1 | 2, y: number, x: number, width: number): boolean {
     var offset;
