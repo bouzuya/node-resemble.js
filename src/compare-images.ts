@@ -117,6 +117,15 @@ const copyErrorPixel = (
   setPixel(px, offset, p.r, p.g, p.b, p.a);
 };
 
+const copyPixel = (
+  px: Buffer,
+  offset: number,
+  p1: Pixel,
+  pixelTransparency: number
+): void => {
+  setPixel(px, offset, p1.r, p1.g, p1.b, p1.a * pixelTransparency);
+};
+
 const compareImages = (file1: File, file2: File, options?: ResembleOptions): Promise<CompareResult> => {
   var pixelTransparency = 1;
 
@@ -237,11 +246,6 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
     return false;
   }
 
-  // ? copyPixel(px: Buffer, offset: number, p1: Pixel, p2: Pixel): void
-  function copyPixel(px: Buffer, offset: number, p1: Pixel): void {
-    setPixel(px, offset, p1.r, p1.g, p1.b, p1.a * pixelTransparency);
-  }
-
   function copyGrayScalePixel(px: Buffer, offset: number, p: Pixel): void {
     setPixel(px, offset, p.brightness, p.brightness, p.brightness, p.a * pixelTransparency);
   }
@@ -316,12 +320,12 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
       if (skip) { // only skip if the image isn't small
         if (y % skip === 0 || x % skip === 0) {
 
-          copyPixel(targetPix, offset, { // ? { r: 0, b: 0, g: 0, a: 0 }
-            red: 0,
-            blue: 0,
-            green: 0,
-            alpha: 0
-          });
+          copyPixel(targetPix, offset, {
+            r: 0,
+            b: 0,
+            g: 0,
+            a: 0
+          }, pixelTransparency);
 
           return;
         }
@@ -345,7 +349,7 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
             (x < currentRectangle[0] + currentRectangle[2])
           ) {
             copyGrayScalePixel(targetPix, offset, pixel2); // ? pixel2.brightness is not defined
-            //copyPixel(targetPix, offset, pixel1, pixel2);
+            //copyPixel(targetPix, offset, pixel1, pixelTransparency);
             return;
           }
         }
@@ -366,7 +370,7 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
       }
 
       if (isRGBSimilar(pixel1, pixel2, tolerance)) {
-        copyPixel(targetPix, offset, pixel1, pixel2);
+        copyPixel(targetPix, offset, pixel1, pixelTransparency);
 
       } else if (ignoreAntialiasing && (
         addBrightnessInfo(pixel1), // jit pixel info augmentation looks a little weird, sorry.
