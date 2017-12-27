@@ -2,6 +2,7 @@ import jpeg = require('jpeg-js');
 import png = require('pngjs');
 import { Byte } from './type/byte';
 import { Color } from './type/color';
+import { CompareImagesOptions } from './type/compare-images-options';
 import { CompareResult } from './type/compare-result';
 import { File } from './type/file';
 import { Image } from './type/image';
@@ -213,14 +214,17 @@ const analyseImages = (
   image2: Image,
   width: number,
   height: number,
-  largeImageThreshold: number,
-  ignoreAntialiasing: boolean,
-  ignoreColors: boolean,
-  ignoreRectangles: Rectangle[] | null,
-  pixelTransparency: number,
-  tolerance: Tolerance,
-  errorPixelTransformer: (p1: Pixel, p2: Pixel) => Pixel
+  options: CompareImagesOptions
 ): CompareResult => {
+  const {
+    errorPixelTransformer,
+    ignoreAntialiasing,
+    ignoreColors,
+    ignoreRectangles,
+    largeImageThreshold,
+    tolerance,
+    transparency: pixelTransparency
+  } = options;
   const imageData1 = image1.data;
   const imageData2 = image2.data;
   //TODO
@@ -331,17 +335,25 @@ const analyseImages = (
   };
 };
 
-const compareImages = (file1: File, file2: File, options?: ResembleOptions): Promise<CompareResult> => {
-  var pixelTransparency = 1;
-
-  var errorPixelColor: Color = { // Color for Error Pixels. Between 0 and 255.
-    red: 255,
-    green: 0,
-    blue: 255,
-    alpha: 255
+const parseOptions = (options?: ResembleOptions): CompareImagesOptions => {
+  const opts = options || {};
+  const getColorValue = (
+    color: Partial<Color> | undefined,
+    key: keyof Color,
+    defaultValue: Byte
+  ): Byte => {
+    if (typeof color === 'undefined') return defaultValue;
+    const value = color[key];
+    if (typeof value === 'undefined') return defaultValue;
+    return value;
   };
-
-  var errorPixelTransform = {
+  const errorPixelColor: Color = {
+    red: getColorValue(opts.errorColor, 'red', 255),
+    green: getColorValue(opts.errorColor, 'green', 0),
+    blue: getColorValue(opts.errorColor, 'blue', 255),
+    alpha: getColorValue(opts.errorColor, 'alpha', 255)
+  };
+  const errorPixelTransform = {
     flat: function (_p1: Pixel, _p2: Pixel): Pixel {
       return {
         r: errorPixelColor.red,
@@ -359,95 +371,89 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
       }
     }
   };
-
-  var errorPixelTransformer: (p1: Pixel, p2: Pixel) => Pixel = errorPixelTransform.flat;
-  var largeImageThreshold = 1200;
-
-  // options start
-  var key: keyof Color;
-  var opts = options || {};
-  if (opts.errorColor) {
-    for (key in opts.errorColor) {
-      let color = opts.errorColor[key];
-      errorPixelColor[key] = typeof color === 'undefined'
-        ? errorPixelColor[key]
-        : color;
+  const errorPixelTransformer =
+    typeof opts.errorType !== 'undefined' && typeof errorPixelTransform[opts.errorType] !== 'undefined'
+      ? errorPixelTransform[opts.errorType]
+      : errorPixelTransform.flat;
+  const transparency = typeof opts.transparency !== 'undefined'
+    ? opts.transparency
+    : 1;
+  const largeImageThreshold = typeof opts.largeImageThreshold !== 'undefined'
+    ? opts.largeImageThreshold
+    : 1200;
+  const ignoreType: 'antialiasing' | 'colors' | 'nothing' | 'default' =
+    typeof opts.ignoreAntialiasing !== 'undefined' && opts.ignoreAntialiasing
+      ? 'antialiasing'
+      : typeof opts.ignoreColors !== 'undefined' && opts.ignoreColors
+        ? 'colors'
+        : typeof opts.ignoreNothing !== 'undefined' && opts.ignoreNothing
+          ? 'nothing'
+          : 'default';
+  const tolerance: Tolerance = ignoreType === 'antialiasing'
+    ? {
+      red: 32,
+      green: 32,
+      blue: 32,
+      alpha: 32,
+      minBrightness: 64,
+      maxBrightness: 96
     }
-  }
-  if (opts.errorType && errorPixelTransform[opts.errorType]) {
-    errorPixelTransformer = errorPixelTransform[opts.errorType];
-  }
-  pixelTransparency = opts.transparency || pixelTransparency;
-  if (typeof opts.largeImageThreshold !== 'undefined') {
-    largeImageThreshold = opts.largeImageThreshold;
-  }
-  // options end
-
-  var tolerance: Tolerance = { // between 0 and 255
-    red: 16,
-    green: 16,
-    blue: 16,
-    alpha: 16,
-    minBrightness: 16,
-    maxBrightness: 240
+    : ignoreType === 'colors'
+      ? {
+        red: 16, // unused -> default
+        green: 16, // unused -> default
+        blue: 16, // unused -> default
+        alpha: 16,
+        minBrightness: 16,
+        maxBrightness: 240
+      }
+      : ignoreType === 'nothing'
+        ? {
+          red: 0,
+          green: 0,
+          blue: 0,
+          alpha: 0,
+          minBrightness: 0,
+          maxBrightness: 255
+        }
+        : {
+          red: 16,
+          green: 16,
+          blue: 16,
+          alpha: 16,
+          minBrightness: 16,
+          maxBrightness: 240
+        };
+  const ignoreAntialiasing = ignoreType === 'antialiasing';
+  const ignoreColors = ignoreType === 'colors';
+  const ignoreRectangles: Rectangle[] | null =
+    typeof opts.ignoreRectangles !== 'undefined'
+      ? opts.ignoreRectangles
+      : null;
+  return {
+    largeImageThreshold,
+    ignoreAntialiasing,
+    ignoreColors,
+    ignoreRectangles,
+    transparency,
+    tolerance,
+    errorPixelTransformer
   };
+};
 
-  var ignoreAntialiasing = false;
-  var ignoreColors = false;
-  var ignoreRectangles: Rectangle[] | null = null;
-
-  if (typeof opts.ignoreAntialiasing !== 'undefined' && opts.ignoreAntialiasing) {
-    tolerance.red = 32;
-    tolerance.green = 32;
-    tolerance.blue = 32;
-    tolerance.alpha = 32;
-    tolerance.minBrightness = 64;
-    tolerance.maxBrightness = 96;
-
-    ignoreAntialiasing = true;
-    ignoreColors = false;
-  }
-  if (typeof opts.ignoreColors !== 'undefined' && opts.ignoreColors) {
-    tolerance.alpha = 16;
-    tolerance.minBrightness = 16;
-    tolerance.maxBrightness = 240;
-
-    ignoreAntialiasing = false;
-    ignoreColors = true;
-  }
-  if (typeof opts.ignoreNothing !== 'undefined' && opts.ignoreNothing) {
-    tolerance.red = 16;
-    tolerance.green = 16;
-    tolerance.blue = 16;
-    tolerance.alpha = 16;
-    tolerance.minBrightness = 16;
-    tolerance.maxBrightness = 240;
-
-    ignoreAntialiasing = false;
-    ignoreColors = false;
-  }
-  if (typeof opts.ignoreRectangles !== 'undefined') {
-    ignoreRectangles = opts.ignoreRectangles;
-  }
-
+const compareImages = (file1: File, file2: File, options?: ResembleOptions): Promise<CompareResult> => {
   return Promise
     .all([loadImageData(file1), loadImageData(file2)])
     .then(([image1, image2]: [Image, Image]) => {
-      var width = image1.width > image2.width ? image1.width : image2.width;
-      var height = image1.height > image2.height ? image1.height : image2.height;
+      const width = image1.width > image2.width ? image1.width : image2.width;
+      const height = image1.height > image2.height ? image1.height : image2.height;
       //lksv: normalization removed
       return analyseImages(
         image1,
         image2,
         width,
         height,
-        largeImageThreshold,
-        ignoreAntialiasing,
-        ignoreColors,
-        ignoreRectangles,
-        pixelTransparency,
-        tolerance,
-        errorPixelTransformer
+        parseOptions(options)
       );
     });
 };
