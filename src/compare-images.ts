@@ -126,6 +126,15 @@ const copyPixel = (
   setPixel(px, offset, p1.r, p1.g, p1.b, p1.a * pixelTransparency);
 };
 
+const copyGrayScalePixel = (
+  px: Buffer,
+  offset: number,
+  p: PixelWithBrightnessInfo,
+  pixelTransparency: number
+): void => {
+  setPixel(px, offset, p.brightness, p.brightness, p.brightness, p.a * pixelTransparency);
+};
+
 const compareImages = (file1: File, file2: File, options?: ResembleOptions): Promise<CompareResult> => {
   var pixelTransparency = 1;
 
@@ -246,10 +255,6 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
     return false;
   }
 
-  function copyGrayScalePixel(px: Buffer, offset: number, p: Pixel): void {
-    setPixel(px, offset, p.brightness, p.brightness, p.brightness, p.a * pixelTransparency);
-  }
-
   function getPixelInfo(imageData: Buffer, offset: number, _cacheSet: 1 | 2): Pixel | null {
     var r;
     var g;
@@ -348,7 +353,8 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
             (x >= currentRectangle[0]) &&
             (x < currentRectangle[0] + currentRectangle[2])
           ) {
-            copyGrayScalePixel(targetPix, offset, pixel2); // ? pixel2.brightness is not defined
+            const pixel2_ = pixel2 as PixelWithBrightnessInfo; // FIXME: addBrightnessInfo(pixel2) has not been called yet
+            copyGrayScalePixel(targetPix, offset, pixel2_, pixelTransparency); // ? pixel2.brightness is not defined
             //copyPixel(targetPix, offset, pixel1, pixelTransparency);
             return;
           }
@@ -361,7 +367,7 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
         addBrightnessInfo(pixel2);
 
         if (isPixelBrightnessSimilar(pixel1 as PixelWithBrightnessInfo, pixel2 as PixelWithBrightnessInfo, tolerance)) {
-          copyGrayScalePixel(targetPix, offset, pixel2 as PixelWithBrightnessInfo);
+          copyGrayScalePixel(targetPix, offset, pixel2 as PixelWithBrightnessInfo, pixelTransparency);
         } else {
           copyErrorPixel(targetPix, offset, pixel1 as PixelWithBrightnessInfo, pixel2 as PixelWithBrightnessInfo, errorPixelTransformer);
           mismatchCount++;
@@ -380,7 +386,7 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
       )) {
 
         if (isPixelBrightnessSimilar(pixel1 as PixelWithBrightnessInfo, pixel2 as PixelWithBrightnessInfo, tolerance)) {
-          copyGrayScalePixel(targetPix, offset, pixel2 as PixelWithBrightnessInfo);
+          copyGrayScalePixel(targetPix, offset, pixel2 as PixelWithBrightnessInfo, pixelTransparency);
         } else {
           copyErrorPixel(targetPix, offset, pixel1 as PixelWithBrightnessInfo, pixel2 as PixelWithBrightnessInfo, errorPixelTransformer);
           mismatchCount++;
