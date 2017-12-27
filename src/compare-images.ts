@@ -149,6 +149,17 @@ const copyGrayScalePixel = (
   setRGBA(px, offset, p.brightness, p.brightness, p.brightness, p.a * pixelTransparency);
 };
 
+// convert Pixel to PixelWithBrightnessInfo
+const toPixelWithBrightness = (p: Pixel): PixelWithBrightnessInfo => {
+  return {
+    r: p.r,
+    g: p.g,
+    b: p.b,
+    a: p.a,
+    brightness: getBrightness(p.r, p.g, p.b) // 'corrected' lightness
+  };
+};
+
 const compareImages = (file1: File, file2: File, options?: ResembleOptions): Promise<CompareResult> => {
   var pixelTransparency = 1;
 
@@ -240,18 +251,18 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
             continue;
           }
 
-          addBrightnessInfo(targetPix);
-          addHueInfo(targetPix as PixelWithBrightnessInfo);
+          const targetPixWithBrightness = toPixelWithBrightness(targetPix);
+          addHueInfo(targetPixWithBrightness as PixelWithBrightnessInfo);
 
-          if (isContrasting(sourcePix as PixelWithBrightnessAndHueInfo, targetPix as PixelWithBrightnessAndHueInfo, tolerance)) {
+          if (isContrasting(sourcePix as PixelWithBrightnessAndHueInfo, targetPixWithBrightness as PixelWithBrightnessAndHueInfo, tolerance)) {
             hasHighContrastSibling++;
           }
 
-          if (isRGBSame(sourcePix as PixelWithBrightnessAndHueInfo, targetPix as PixelWithBrightnessAndHueInfo)) {
+          if (isRGBSame(sourcePix as PixelWithBrightnessAndHueInfo, targetPixWithBrightness as PixelWithBrightnessAndHueInfo)) {
             hasEquivilantSibling++;
           }
 
-          if (Math.abs((targetPix as PixelWithBrightnessAndHueInfo).h - (sourcePix as PixelWithBrightnessAndHueInfo).h) > 0.3) {
+          if (Math.abs((targetPixWithBrightness as PixelWithBrightnessAndHueInfo).h - (sourcePix as PixelWithBrightnessAndHueInfo).h) > 0.3) {
             hasSiblingWithDifferentHue++;
           }
 
@@ -267,11 +278,6 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
     }
 
     return false;
-  }
-
-  // convert Pixel to PixelWithBrightnessInfo
-  function addBrightnessInfo(p: Pixel): void {
-    (p as PixelWithBrightnessInfo).brightness = getBrightness(p.r, p.g, p.b); // 'corrected' lightness
   }
 
   // convert PixelWithBrightnessInfo to PixelWithBrightnessAndHueInfo
@@ -350,14 +356,12 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
       }
 
       if (ignoreColors) {
-
-        addBrightnessInfo(pixel1);
-        addBrightnessInfo(pixel2);
-
-        if (isPixelBrightnessSimilar(pixel1 as PixelWithBrightnessInfo, pixel2 as PixelWithBrightnessInfo, tolerance)) {
-          copyGrayScalePixel(targetPix, offset, pixel2 as PixelWithBrightnessInfo, pixelTransparency);
+        const pixel1WithBrightness = toPixelWithBrightness(pixel1);
+        const pixel2WithBrightness = toPixelWithBrightness(pixel2);
+        if (isPixelBrightnessSimilar(pixel1WithBrightness, pixel2WithBrightness, tolerance)) {
+          copyGrayScalePixel(targetPix, offset, pixel2WithBrightness, pixelTransparency);
         } else {
-          copyErrorPixel(targetPix, offset, pixel1 as PixelWithBrightnessInfo, pixel2 as PixelWithBrightnessInfo, errorPixelTransformer);
+          copyErrorPixel(targetPix, offset, pixel1WithBrightness, pixel2WithBrightness, errorPixelTransformer);
           mismatchCount++;
         }
         return;
@@ -366,24 +370,27 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
       if (isRGBSimilar(pixel1, pixel2, tolerance)) {
         copyPixel(targetPix, offset, pixel1, pixelTransparency);
 
-      } else if (ignoreAntialiasing && (
-        addBrightnessInfo(pixel1), // jit pixel info augmentation looks a little weird, sorry.
-        addBrightnessInfo(pixel2),
-        isAntialiased(pixel1 as PixelWithBrightnessInfo, imageData1, y, x, width) ||
-        isAntialiased(pixel2 as PixelWithBrightnessInfo, imageData2, y, x, width)
-      )) {
-
-        if (isPixelBrightnessSimilar(pixel1 as PixelWithBrightnessInfo, pixel2 as PixelWithBrightnessInfo, tolerance)) {
-          copyGrayScalePixel(targetPix, offset, pixel2 as PixelWithBrightnessInfo, pixelTransparency);
+      } else if (ignoreAntialiasing) {
+        const pixel1WithBrightness = toPixelWithBrightness(pixel1); // jit pixel info augmentation looks a little weird, sorry.
+        const pixel2WithBrightness = toPixelWithBrightness(pixel2);
+        if (
+          isAntialiased(pixel1WithBrightness, imageData1, y, x, width) ||
+          isAntialiased(pixel2WithBrightness, imageData2, y, x, width)
+        ) {
+          if (isPixelBrightnessSimilar(pixel1WithBrightness, pixel2WithBrightness, tolerance)) {
+            copyGrayScalePixel(targetPix, offset, pixel2WithBrightness, pixelTransparency);
+          } else {
+            copyErrorPixel(targetPix, offset, pixel1WithBrightness, pixel2WithBrightness, errorPixelTransformer);
+            mismatchCount++;
+          }
         } else {
-          copyErrorPixel(targetPix, offset, pixel1 as PixelWithBrightnessInfo, pixel2 as PixelWithBrightnessInfo, errorPixelTransformer);
+          copyErrorPixel(targetPix, offset, pixel1WithBrightness, pixel2WithBrightness, errorPixelTransformer);
           mismatchCount++;
         }
       } else {
-        copyErrorPixel(targetPix, offset, pixel1 as PixelWithBrightnessInfo, pixel2 as PixelWithBrightnessInfo, errorPixelTransformer);
+        copyErrorPixel(targetPix, offset, pixel1, pixel2, errorPixelTransformer);
         mismatchCount++;
       }
-
     });
 
     const rawMisMatchPercentage = (mismatchCount / (height * width) * 100);
