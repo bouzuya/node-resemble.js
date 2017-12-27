@@ -103,7 +103,11 @@ const getPixel = (px: Buffer, offset: number): Pixel | null => {
   };
 };
 
-const setPixel = (
+const setPixel = (buffer: Buffer, offset: number, p: Pixel): void => {
+  setRGBA(buffer, offset, p.r, p.g, p.b, p.a);
+};
+
+const setRGBA = (
   buffer: Buffer,
   offset: number,
   r: Byte,
@@ -124,8 +128,7 @@ const copyErrorPixel = (
   p2: Pixel,
   errorPixelTransformer: (p1: Pixel, p2: Pixel) => Pixel
 ): void => {
-  const p = errorPixelTransformer(p1, p2);
-  setPixel(px, offset, p.r, p.g, p.b, p.a);
+  setPixel(px, offset, errorPixelTransformer(p1, p2));
 };
 
 const copyPixel = (
@@ -134,7 +137,7 @@ const copyPixel = (
   p1: Pixel,
   pixelTransparency: number
 ): void => {
-  setPixel(px, offset, p1.r, p1.g, p1.b, p1.a * pixelTransparency);
+  setRGBA(px, offset, p1.r, p1.g, p1.b, p1.a * pixelTransparency);
 };
 
 const copyGrayScalePixel = (
@@ -143,7 +146,7 @@ const copyGrayScalePixel = (
   p: PixelWithBrightnessInfo,
   pixelTransparency: number
 ): void => {
-  setPixel(px, offset, p.brightness, p.brightness, p.brightness, p.a * pixelTransparency);
+  setRGBA(px, offset, p.brightness, p.brightness, p.brightness, p.a * pixelTransparency);
 };
 
 const compareImages = (file1: File, file2: File, options?: ResembleOptions): Promise<CompareResult> => {
