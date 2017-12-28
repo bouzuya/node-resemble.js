@@ -46,24 +46,24 @@ const isPixelLightnessSimilar = (
   p2: PixelWithL,
   tolerance: Tolerance
 ): boolean => {
-  const alpha = isColorSimilar(p1.a, p2.a, 'alpha', tolerance);
+  const a = isColorSimilar(p1.a, p2.a, 'a', tolerance);
   const l = isColorSimilar(p1.l, p2.l, 'minL', tolerance);
-  return l && alpha;
+  return l && a;
 };
 
 const isRGBSame = (p1: Pixel, p2: Pixel): boolean => {
-  const red = p1.r === p2.r;
-  const green = p1.g === p2.g;
-  const blue = p1.b === p2.b;
-  return red && green && blue;
+  const r = p1.r === p2.r;
+  const g = p1.g === p2.g;
+  const b = p1.b === p2.b;
+  return r && g && b;
 };
 
 const isRGBASimilar = (p1: Pixel, p2: Pixel, tolerance: Tolerance): boolean => {
-  const red = isColorSimilar(p1.r, p2.r, 'red', tolerance);
-  const green = isColorSimilar(p1.g, p2.g, 'green', tolerance);
-  const blue = isColorSimilar(p1.b, p2.b, 'blue', tolerance);
-  const alpha = isColorSimilar(p1.a, p2.a, 'alpha', tolerance);
-  return red && green && blue && alpha;
+  const r = isColorSimilar(p1.r, p2.r, 'r', tolerance);
+  const g = isColorSimilar(p1.g, p2.g, 'g', tolerance);
+  const b = isColorSimilar(p1.b, p2.b, 'b', tolerance);
+  const a = isColorSimilar(p1.a, p2.a, 'a', tolerance);
+  return r && g && b && a;
 };
 
 const isContrasting = (
@@ -336,26 +336,26 @@ const parseOptions = (options?: ResembleOptions): CompareImagesOptions => {
     if (typeof value === 'undefined') return defaultValue;
     return value;
   };
-  const errorPixelColor: RGBA = {
-    red: getColorValue(opts.errorColor, 'red', 255),
-    green: getColorValue(opts.errorColor, 'green', 0),
-    blue: getColorValue(opts.errorColor, 'blue', 255),
-    alpha: getColorValue(opts.errorColor, 'alpha', 255)
+  const errorPixelColor: Pixel = {
+    r: getColorValue(opts.errorColor, 'red', 255),
+    g: getColorValue(opts.errorColor, 'green', 0),
+    b: getColorValue(opts.errorColor, 'blue', 255),
+    a: getColorValue(opts.errorColor, 'alpha', 255)
   };
   const errorPixelTransform = {
     flat: function (_p1: Pixel, _p2: Pixel): Pixel {
       return {
-        r: errorPixelColor.red,
-        g: errorPixelColor.green,
-        b: errorPixelColor.blue,
-        a: errorPixelColor.alpha
+        r: errorPixelColor.r,
+        g: errorPixelColor.g,
+        b: errorPixelColor.b,
+        a: errorPixelColor.a
       }
     },
     movement: function (_p1: Pixel, p2: Pixel): Pixel {
       return {
-        r: ((p2.r * (errorPixelColor.red / 255)) + errorPixelColor.red) / 2,
-        g: ((p2.g * (errorPixelColor.green / 255)) + errorPixelColor.green) / 2,
-        b: ((p2.b * (errorPixelColor.blue / 255)) + errorPixelColor.blue) / 2,
+        r: ((p2.r * (errorPixelColor.r / 255)) + errorPixelColor.r) / 2,
+        g: ((p2.g * (errorPixelColor.g / 255)) + errorPixelColor.g) / 2,
+        b: ((p2.b * (errorPixelColor.b / 255)) + errorPixelColor.b) / 2,
         a: p2.a
       }
     }
@@ -380,36 +380,36 @@ const parseOptions = (options?: ResembleOptions): CompareImagesOptions => {
           : 'default';
   const tolerance: Tolerance = ignoreType === 'antialiasing'
     ? {
-      red: 32,
-      green: 32,
-      blue: 32,
-      alpha: 32,
+      r: 32,
+      g: 32,
+      b: 32,
+      a: 32,
       minL: 64,
       maxL: 96
     }
     : ignoreType === 'colors'
       ? {
-        red: 16, // unused -> default
-        green: 16, // unused -> default
-        blue: 16, // unused -> default
-        alpha: 16,
+        r: 16, // unused -> default
+        g: 16, // unused -> default
+        b: 16, // unused -> default
+        a: 16,
         minL: 16,
         maxL: 240
       }
       : ignoreType === 'nothing'
         ? {
-          red: 0,
-          green: 0,
-          blue: 0,
-          alpha: 0,
+          r: 0,
+          g: 0,
+          b: 0,
+          a: 0,
           minL: 0,
           maxL: 255
         }
         : {
-          red: 16,
-          green: 16,
-          blue: 16,
-          alpha: 16,
+          r: 16,
+          g: 16,
+          b: 16,
+          a: 16,
           minL: 16,
           maxL: 240
         };
