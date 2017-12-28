@@ -57,7 +57,7 @@ const isRGBSame = (p1: Pixel, p2: Pixel): boolean => {
   return red && green && blue;
 };
 
-const isRGBSimilar = (p1: Pixel, p2: Pixel, tolerance: Tolerance): boolean => {
+const isRGBASimilar = (p1: Pixel, p2: Pixel, tolerance: Tolerance): boolean => {
   const red = isColorSimilar(p1.r, p2.r, 'red', tolerance);
   const green = isColorSimilar(p1.g, p2.g, 'green', tolerance);
   const blue = isColorSimilar(p1.b, p2.b, 'blue', tolerance);
@@ -284,7 +284,7 @@ const analyseImages = (
         copyErrorPixel(diffImageData, offset, pixel1WithBrightness, pixel2WithBrightness, errorPixelTransformer);
         mismatchCount++;
       }
-    } else if (isRGBSimilar(pixel1, pixel2, tolerance)) {
+    } else if (isRGBASimilar(pixel1, pixel2, tolerance)) {
       copyPixel(diffImageData, offset, pixel1, pixelTransparency);
     } else if (ignoreAntialiasing) {
       const pixel1WithBrightness = toPixelWithBrightness(pixel1); // jit pixel info augmentation looks a little weird, sorry.
