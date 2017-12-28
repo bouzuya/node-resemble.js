@@ -229,7 +229,6 @@ const analyseImages = (
   let mismatchCount = 0;
   const time = Date.now();
   let skip: number | undefined;
-  let currentRectangle = null;
   if (!!largeImageThreshold && ignoreAntialiasing && (width > largeImageThreshold || height > largeImageThreshold)) {
     skip = 6;
   }
@@ -253,14 +252,8 @@ const analyseImages = (
     if (pixel1 === null || pixel2 === null) return;
     if (ignoreRectangles) {
       for (let rectagnlesIdx = 0; rectagnlesIdx < ignoreRectangles.length; rectagnlesIdx++) {
-        currentRectangle = ignoreRectangles[rectagnlesIdx];
-        //console.log(currentRectangle, y, x);
-        if (
-          (y >= currentRectangle[1]) &&
-          (y < currentRectangle[1] + currentRectangle[3]) &&
-          (x >= currentRectangle[0]) &&
-          (x < currentRectangle[0] + currentRectangle[2])
-        ) {
+        let [rx, ry, rwidth, rheight] = ignoreRectangles[rectagnlesIdx];
+        if ((y >= ry) && (y < ry + rheight) && (x >= rx) && (x < rx + rwidth)) {
           const pixel2_ = pixel2 as PixelWithL; // FIXME: toPixelWithL(pixel2) has not been called yet
           copyGrayScalePixel(diffImageData, offset, pixel2_, pixelTransparency); // ? pixel2.l is not defined
           //copyPixel(targetPix, offset, pixel1, pixelTransparency);
