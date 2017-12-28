@@ -1,10 +1,10 @@
 import { FileNameOrData } from './type/file-name-or-data';
 import { ParsedImage } from './type/parsed-image';
 import { getBrightness } from './get-brightness';
-import { loadImageData } from './load-image-data';
+import { loadImage } from './load-image';
 
 const parseImage = (file: FileNameOrData): Promise<ParsedImage> => {
-  return loadImageData(file).then(({ data, width, height }) => {
+  return loadImage(file).then(({ data, width, height }) => {
     let pixelCount = 0;
     let redTotal = 0;
     let greenTotal = 0;

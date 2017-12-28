@@ -15,7 +15,7 @@ import { Rectangle } from './type/rectangle';
 import { ResembleOptions } from './type/resemble-options';
 import { Tolerance } from './type/tolerance';
 import { getBrightness } from './get-brightness';
-import { loadImageData } from './load-image-data';
+import { loadImage } from './load-image';
 
 const loop = (
   height: number,
@@ -443,7 +443,7 @@ const parseOptions = (options?: ResembleOptions): CompareImagesOptions => {
 
 const compareImages = (file1: FileNameOrData, file2: FileNameOrData, options?: ResembleOptions): Promise<CompareResult> => {
   return Promise
-    .all([loadImageData(file1), loadImageData(file2)])
+    .all([loadImage(file1), loadImage(file2)])
     .then(([image1, image2]: [Image, Image]) => {
       //lksv: normalization removed
       return analyseImages(image1, image2, parseOptions(options));

@@ -5,7 +5,7 @@ import png = require('pngjs');
 import { FileNameOrData } from './type/file-name-or-data';
 import { Image } from './type/image';
 
-const loadImageData = (file: FileNameOrData): Promise<Image> => {
+const loadImage = (file: FileNameOrData): Promise<Image> => {
   return new Promise((resolve, reject) => {
     if (Buffer.isBuffer(file)) {
       const buffer = file;
@@ -39,4 +39,4 @@ const loadImageData = (file: FileNameOrData): Promise<Image> => {
   });
 };
 
-export { loadImageData };
+export { loadImage };
