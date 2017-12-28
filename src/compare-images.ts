@@ -93,61 +93,61 @@ const getHue = (r: Byte, g: Byte, b: Byte): number => {
   }
 };
 
-const getPixel = (px: Buffer, offset: number): Pixel | null => {
-  const r = px[offset];
+const getPixel = (imageData: Buffer, offset: number): Pixel | null => {
+  const r = imageData[offset];
   if (typeof r === 'undefined') return null;
   return {
     r: r,
-    g: px[offset + 1],
-    b: px[offset + 2],
-    a: px[offset + 3]
+    g: imageData[offset + 1],
+    b: imageData[offset + 2],
+    a: imageData[offset + 3]
   };
 };
 
-const setPixel = (buffer: Buffer, offset: number, p: Pixel): void => {
-  setRGBA(buffer, offset, p.r, p.g, p.b, p.a);
+const setPixel = (imageData: Buffer, offset: number, p: Pixel): void => {
+  setRGBA(imageData, offset, p.r, p.g, p.b, p.a);
 };
 
 const setRGBA = (
-  buffer: Buffer,
+  imageData: Buffer,
   offset: number,
   r: Byte,
   g: Byte,
   b: Byte,
   a: Byte
 ): void => {
-  buffer[offset] = r;
-  buffer[offset + 1] = g;
-  buffer[offset + 2] = b;
-  buffer[offset + 3] = a;
+  imageData[offset] = r;
+  imageData[offset + 1] = g;
+  imageData[offset + 2] = b;
+  imageData[offset + 3] = a;
 };
 
 const copyErrorPixel = (
-  px: Buffer,
+  imageData: Buffer,
   offset: number,
   p1: Pixel,
   p2: Pixel,
   errorPixelTransformer: (p1: Pixel, p2: Pixel) => Pixel
 ): void => {
-  setPixel(px, offset, errorPixelTransformer(p1, p2));
+  setPixel(imageData, offset, errorPixelTransformer(p1, p2));
 };
 
 const copyPixel = (
-  px: Buffer,
+  imageData: Buffer,
   offset: number,
   p1: Pixel,
   pixelTransparency: number
 ): void => {
-  setRGBA(px, offset, p1.r, p1.g, p1.b, p1.a * pixelTransparency);
+  setRGBA(imageData, offset, p1.r, p1.g, p1.b, p1.a * pixelTransparency);
 };
 
 const copyGrayScalePixel = (
-  px: Buffer,
+  imageData: Buffer,
   offset: number,
   p: PixelWithBrightnessInfo,
   pixelTransparency: number
 ): void => {
-  setRGBA(px, offset, p.brightness, p.brightness, p.brightness, p.a * pixelTransparency);
+  setRGBA(imageData, offset, p.brightness, p.brightness, p.brightness, p.a * pixelTransparency);
 };
 
 const toPixelWithBrightness = (p: Pixel): PixelWithBrightnessInfo => {
@@ -172,7 +172,7 @@ const toPixelWithBrightnessAndHue = (p: PixelWithBrightnessInfo): PixelWithBrigh
 };
 
 const isAntialiased = (
-  sourcePix: PixelWithBrightnessInfo,
+  centerPixel: PixelWithBrightnessInfo,
   imageData: Buffer,
   y: number,
   x: number,
@@ -183,22 +183,22 @@ const isAntialiased = (
   let hasHighContrastSibling = 0;
   let hasSiblingWithDifferentHue = 0;
   let hasEquivilantSibling = 0;
-  const sourcePixWithBrightnessAndHue = toPixelWithBrightnessAndHue(sourcePix);
+  const centerPixelWithBrightnessAndHue = toPixelWithBrightnessAndHue(centerPixel);
   for (let i = distance * -1; i <= distance; i++) {
     for (let j = distance * -1; j <= distance; j++) {
       if (i === 0 && j === 0) continue; // ignore source pixel
       const offset = ((y + j) * width + (x + i)) * 4;
-      const targetPix = getPixel(imageData, offset);
-      if (targetPix === null) continue;
-      const targetPixWithBrightness = toPixelWithBrightness(targetPix);
+      const aroundPixel = getPixel(imageData, offset);
+      if (aroundPixel === null) continue;
+      const targetPixWithBrightness = toPixelWithBrightness(aroundPixel);
       const targetPixWithBrightnessAndHue = toPixelWithBrightnessAndHue(targetPixWithBrightness);
-      if (isContrasting(sourcePixWithBrightnessAndHue, targetPixWithBrightnessAndHue, tolerance)) {
+      if (isContrasting(centerPixelWithBrightnessAndHue, targetPixWithBrightnessAndHue, tolerance)) {
         hasHighContrastSibling++;
       }
-      if (isRGBSame(sourcePixWithBrightnessAndHue, targetPixWithBrightnessAndHue)) {
+      if (isRGBSame(centerPixelWithBrightnessAndHue, targetPixWithBrightnessAndHue)) {
         hasEquivilantSibling++;
       }
-      if (Math.abs(targetPixWithBrightnessAndHue.h - sourcePixWithBrightnessAndHue.h) > 0.3) {
+      if (Math.abs(targetPixWithBrightnessAndHue.h - centerPixelWithBrightnessAndHue.h) > 0.3) {
         hasSiblingWithDifferentHue++;
       }
       if (hasSiblingWithDifferentHue > 1 || hasHighContrastSibling > 1) {
