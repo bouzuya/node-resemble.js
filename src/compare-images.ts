@@ -35,11 +35,7 @@ const isColorSimilar = (
   color: keyof Tolerance,
   tolerance: Tolerance
 ): boolean => {
-  if (typeof b1 === 'undefined') return false;
-  if (typeof b2 === 'undefined') return false;
-  if (b1 === b2) return true;
-  if (Math.abs(b1 - b2) < tolerance[color]) return true;
-  return false;
+  return b1 === b2 || Math.abs(b1 - b2) < tolerance[color];
 };
 
 const isPixelBrightnessSimilar = (
