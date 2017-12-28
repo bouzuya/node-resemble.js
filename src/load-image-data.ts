@@ -2,10 +2,10 @@ import * as fs from 'fs';
 import jpeg = require('jpeg-js');
 import * as path from 'path';
 import png = require('pngjs');
-import { File } from './type/file';
+import { FileNameOrData } from './type/file-name-or-data';
 import { Image } from './type/image';
 
-const loadImageData = (file: File): Promise<Image> => {
+const loadImageData = (file: FileNameOrData): Promise<Image> => {
   return new Promise((resolve, reject) => {
     if (Buffer.isBuffer(file)) {
       const buffer = file;

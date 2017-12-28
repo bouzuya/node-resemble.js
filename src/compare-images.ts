@@ -4,7 +4,7 @@ import { U8 } from './type/u8';
 import { Color } from './type/color';
 import { CompareImagesOptions } from './type/compare-images-options';
 import { CompareResult } from './type/compare-result';
-import { File } from './type/file';
+import { FileNameOrData } from './type/file-name-or-data';
 import { Image } from './type/image';
 import {
   Pixel,
@@ -441,7 +441,7 @@ const parseOptions = (options?: ResembleOptions): CompareImagesOptions => {
   };
 };
 
-const compareImages = (file1: File, file2: File, options?: ResembleOptions): Promise<CompareResult> => {
+const compareImages = (file1: FileNameOrData, file2: FileNameOrData, options?: ResembleOptions): Promise<CompareResult> => {
   return Promise
     .all([loadImageData(file1), loadImageData(file2)])
     .then(([image1, image2]: [Image, Image]) => {
