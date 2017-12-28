@@ -1,10 +1,10 @@
-import { Byte } from './byte';
+import { U8 } from './u8';
 
 export interface Pixel {
-  r: Byte;
-  g: Byte;
-  b: Byte;
-  a: Byte;
+  r: U8;
+  g: U8;
+  b: U8;
+  a: U8;
 }
 
 interface BrightnessInfo {

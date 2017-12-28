@@ -1,6 +1,6 @@
-import { Byte } from './type/byte';
+import { U8 } from './type/u8';
 
-const getBrightness = (r: Byte, g: Byte, b: Byte): number => {
+const getBrightness = (r: U8, g: U8, b: U8): number => {
   return 0.3 * r + 0.59 * g + 0.11 * b;
 };
 

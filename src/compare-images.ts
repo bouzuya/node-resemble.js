@@ -1,6 +1,6 @@
 import jpeg = require('jpeg-js');
 import png = require('pngjs');
-import { Byte } from './type/byte';
+import { U8 } from './type/u8';
 import { Color } from './type/color';
 import { CompareImagesOptions } from './type/compare-images-options';
 import { CompareResult } from './type/compare-result';
@@ -30,8 +30,8 @@ const loop = (
 };
 
 const isColorSimilar = (
-  b1: Byte,
-  b2: Byte,
+  b1: U8,
+  b2: U8,
   color: keyof Tolerance,
   tolerance: Tolerance
 ): boolean => {
@@ -77,7 +77,7 @@ const isContrasting = (
   return Math.abs(p1.brightness - p2.brightness) > tolerance.maxBrightness;
 };
 
-const getHue = (r: Byte, g: Byte, b: Byte): number => {
+const getHue = (r: U8, g: U8, b: U8): number => {
   const r1 = r / 255;
   const g1 = g / 255;
   const b1 = b / 255;
@@ -111,10 +111,10 @@ const setPixel = (imageData: Buffer, offset: number, p: Pixel): void => {
 const setRGBA = (
   imageData: Buffer,
   offset: number,
-  r: Byte,
-  g: Byte,
-  b: Byte,
-  a: Byte
+  r: U8,
+  g: U8,
+  b: U8,
+  a: U8
 ): void => {
   imageData[offset] = r;
   imageData[offset + 1] = g;
@@ -340,8 +340,8 @@ const parseOptions = (options?: ResembleOptions): CompareImagesOptions => {
   const getColorValue = (
     color: Partial<Color> | undefined,
     key: keyof Color,
-    defaultValue: Byte
-  ): Byte => {
+    defaultValue: U8
+  ): U8 => {
     if (typeof color === 'undefined') return defaultValue;
     const value = color[key];
     if (typeof value === 'undefined') return defaultValue;
