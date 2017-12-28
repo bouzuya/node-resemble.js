@@ -16,6 +16,7 @@ import { ResembleOptions } from './type/resemble-options';
 import { Tolerance } from './type/tolerance';
 import { getBrightness } from './get-brightness';
 import { loadImage } from './load-image';
+import { newImageBasedOn } from './new-image';
 
 const loop = (
   height: number,
@@ -224,13 +225,7 @@ const analyseImages = (
   const imageData1 = image1.data;
   const imageData2 = image2.data;
   //TODO
-  const diffImage = new png.PNG({
-    width: image1.width,
-    height: image1.height,
-    deflateChunkSize: image1.deflateChunkSize,
-    deflateLevel: image1.deflateLevel,
-    deflateStrategy: image1.deflateStrategy,
-  });
+  const diffImage = newImageBasedOn(image1);
   const diffImageData = diffImage.data;
   let mismatchCount = 0;
   const time = Date.now();
