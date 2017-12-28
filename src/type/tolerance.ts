@@ -5,6 +5,6 @@ export interface Tolerance {
   green: U8;
   blue: U8;
   alpha: U8;
-  minBrightness: U8;
-  maxBrightness: U8;
+  minL: U8;
+  maxL: U8;
 }

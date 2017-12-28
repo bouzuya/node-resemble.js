@@ -7,14 +7,14 @@ export interface Pixel {
   a: U8;
 }
 
-interface BrightnessInfo {
-  brightness: number;
+interface Lightness {
+  l: number;
 }
 
 interface HueInfo {
   h: number;
 }
 
-export type PixelWithBrightnessInfo = Pixel & BrightnessInfo;
+export type PixelWithL = Pixel & Lightness;
 
-export type PixelWithBrightnessAndHueInfo = Pixel & BrightnessInfo & HueInfo;
+export type PixelWithLAndHueInfo = Pixel & Lightness & HueInfo;

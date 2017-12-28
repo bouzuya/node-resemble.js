@@ -6,13 +6,13 @@ import { FileNameOrData } from './type/file-name-or-data';
 import { Image } from './type/image';
 import {
   Pixel,
-  PixelWithBrightnessAndHueInfo,
-  PixelWithBrightnessInfo
+  PixelWithLAndHueInfo,
+  PixelWithL
 } from './type/pixel';
 import { Rectangle } from './type/rectangle';
 import { ResembleOptions } from './type/resemble-options';
 import { Tolerance } from './type/tolerance';
-import { getBrightness } from './get-brightness';
+import { getLightness } from './get-lightness';
 import {
   convertToJPG,
   convertToPNG,
@@ -41,16 +41,14 @@ const isColorSimilar = (
   return b1 === b2 || Math.abs(b1 - b2) < tolerance[color];
 };
 
-const isPixelBrightnessSimilar = (
-  p1: PixelWithBrightnessInfo,
-  p2: PixelWithBrightnessInfo,
+const isPixelLightnessSimilar = (
+  p1: PixelWithL,
+  p2: PixelWithL,
   tolerance: Tolerance
 ): boolean => {
   const alpha = isColorSimilar(p1.a, p2.a, 'alpha', tolerance);
-  const brightness = isColorSimilar(
-    p1.brightness, p2.brightness, 'minBrightness', tolerance
-  );
-  return brightness && alpha;
+  const l = isColorSimilar(p1.l, p2.l, 'minL', tolerance);
+  return l && alpha;
 };
 
 const isRGBSame = (p1: Pixel, p2: Pixel): boolean => {
@@ -69,11 +67,11 @@ const isRGBASimilar = (p1: Pixel, p2: Pixel, tolerance: Tolerance): boolean => {
 };
 
 const isContrasting = (
-  p1: PixelWithBrightnessInfo,
-  p2: PixelWithBrightnessInfo,
+  p1: PixelWithL,
+  p2: PixelWithL,
   tolerance: Tolerance
 ): boolean => {
-  return Math.abs(p1.brightness - p2.brightness) > tolerance.maxBrightness;
+  return Math.abs(p1.l - p2.l) > tolerance.maxL;
 };
 
 const getHue = (r: U8, g: U8, b: U8): number => {
@@ -143,35 +141,35 @@ const copyPixel = (
 const copyGrayScalePixel = (
   imageData: Buffer,
   offset: number,
-  p: PixelWithBrightnessInfo,
+  p: PixelWithL,
   pixelTransparency: number
 ): void => {
-  setRGBA(imageData, offset, p.brightness, p.brightness, p.brightness, p.a * pixelTransparency);
+  setRGBA(imageData, offset, p.l, p.l, p.l, p.a * pixelTransparency);
 };
 
-const toPixelWithBrightness = (p: Pixel): PixelWithBrightnessInfo => {
+const toPixelWithL = (p: Pixel): PixelWithL => {
   return {
     r: p.r,
     g: p.g,
     b: p.b,
     a: p.a,
-    brightness: getBrightness(p.r, p.g, p.b) // 'corrected' lightness
+    l: getLightness(p.r, p.g, p.b) // 'corrected' lightness
   };
 };
 
-const toPixelWithBrightnessAndHue = (p: PixelWithBrightnessInfo): PixelWithBrightnessAndHueInfo => {
+const toPixelWithLAndHue = (p: PixelWithL): PixelWithLAndHueInfo => {
   return {
     r: p.r,
     g: p.g,
     b: p.b,
     a: p.a,
-    brightness: p.brightness,
+    l: p.l,
     h: getHue(p.r, p.g, p.b),
   };
 };
 
 const isAntialiased = (
-  centerPixel: PixelWithBrightnessInfo,
+  centerPixel: PixelWithL,
   imageData: Buffer,
   y: number,
   x: number,
@@ -182,22 +180,22 @@ const isAntialiased = (
   let hasHighContrastSibling = 0;
   let hasSiblingWithDifferentHue = 0;
   let hasEquivilantSibling = 0;
-  const centerPixelWithBrightnessAndHue = toPixelWithBrightnessAndHue(centerPixel);
+  const centerPixelWithLAndHue = toPixelWithLAndHue(centerPixel);
   for (let i = distance * -1; i <= distance; i++) {
     for (let j = distance * -1; j <= distance; j++) {
       if (i === 0 && j === 0) continue; // ignore source pixel
       const offset = ((y + j) * width + (x + i)) * 4;
       const aroundPixel = getPixel(imageData, offset);
       if (aroundPixel === null) continue;
-      const targetPixWithBrightness = toPixelWithBrightness(aroundPixel);
-      const targetPixWithBrightnessAndHue = toPixelWithBrightnessAndHue(targetPixWithBrightness);
-      if (isContrasting(centerPixelWithBrightnessAndHue, targetPixWithBrightnessAndHue, tolerance)) {
+      const targetPixWithL = toPixelWithL(aroundPixel);
+      const targetPixWithLAndHue = toPixelWithLAndHue(targetPixWithL);
+      if (isContrasting(centerPixelWithLAndHue, targetPixWithLAndHue, tolerance)) {
         hasHighContrastSibling++;
       }
-      if (isRGBSame(centerPixelWithBrightnessAndHue, targetPixWithBrightnessAndHue)) {
+      if (isRGBSame(centerPixelWithLAndHue, targetPixWithLAndHue)) {
         hasEquivilantSibling++;
       }
-      if (Math.abs(targetPixWithBrightnessAndHue.h - centerPixelWithBrightnessAndHue.h) > 0.3) {
+      if (Math.abs(targetPixWithLAndHue.h - centerPixelWithLAndHue.h) > 0.3) {
         hasSiblingWithDifferentHue++;
       }
       if (hasSiblingWithDifferentHue > 1 || hasHighContrastSibling > 1) {
@@ -264,8 +262,8 @@ const analyseImages = (
           (x >= currentRectangle[0]) &&
           (x < currentRectangle[0] + currentRectangle[2])
         ) {
-          const pixel2_ = pixel2 as PixelWithBrightnessInfo; // FIXME: addBrightnessInfo(pixel2) has not been called yet
-          copyGrayScalePixel(diffImageData, offset, pixel2_, pixelTransparency); // ? pixel2.brightness is not defined
+          const pixel2_ = pixel2 as PixelWithL; // FIXME: toPixelWithL(pixel2) has not been called yet
+          copyGrayScalePixel(diffImageData, offset, pixel2_, pixelTransparency); // ? pixel2.l is not defined
           //copyPixel(targetPix, offset, pixel1, pixelTransparency);
           return;
         }
@@ -273,31 +271,31 @@ const analyseImages = (
     }
 
     if (ignoreColors) {
-      const pixel1WithBrightness = toPixelWithBrightness(pixel1);
-      const pixel2WithBrightness = toPixelWithBrightness(pixel2);
-      if (isPixelBrightnessSimilar(pixel1WithBrightness, pixel2WithBrightness, tolerance)) {
-        copyGrayScalePixel(diffImageData, offset, pixel2WithBrightness, pixelTransparency);
+      const pixel1WithL = toPixelWithL(pixel1);
+      const pixel2WithL = toPixelWithL(pixel2);
+      if (isPixelLightnessSimilar(pixel1WithL, pixel2WithL, tolerance)) {
+        copyGrayScalePixel(diffImageData, offset, pixel2WithL, pixelTransparency);
       } else {
-        copyErrorPixel(diffImageData, offset, pixel1WithBrightness, pixel2WithBrightness, errorPixelTransformer);
+        copyErrorPixel(diffImageData, offset, pixel1WithL, pixel2WithL, errorPixelTransformer);
         mismatchCount++;
       }
     } else if (isRGBASimilar(pixel1, pixel2, tolerance)) {
       copyPixel(diffImageData, offset, pixel1, pixelTransparency);
     } else if (ignoreAntialiasing) {
-      const pixel1WithBrightness = toPixelWithBrightness(pixel1); // jit pixel info augmentation looks a little weird, sorry.
-      const pixel2WithBrightness = toPixelWithBrightness(pixel2);
+      const pixel1WithL = toPixelWithL(pixel1); // jit pixel info augmentation looks a little weird, sorry.
+      const pixel2WithL = toPixelWithL(pixel2);
       if (
-        isAntialiased(pixel1WithBrightness, imageData1, y, x, width, tolerance) ||
-        isAntialiased(pixel2WithBrightness, imageData2, y, x, width, tolerance)
+        isAntialiased(pixel1WithL, imageData1, y, x, width, tolerance) ||
+        isAntialiased(pixel2WithL, imageData2, y, x, width, tolerance)
       ) {
-        if (isPixelBrightnessSimilar(pixel1WithBrightness, pixel2WithBrightness, tolerance)) {
-          copyGrayScalePixel(diffImageData, offset, pixel2WithBrightness, pixelTransparency);
+        if (isPixelLightnessSimilar(pixel1WithL, pixel2WithL, tolerance)) {
+          copyGrayScalePixel(diffImageData, offset, pixel2WithL, pixelTransparency);
         } else {
-          copyErrorPixel(diffImageData, offset, pixel1WithBrightness, pixel2WithBrightness, errorPixelTransformer);
+          copyErrorPixel(diffImageData, offset, pixel1WithL, pixel2WithL, errorPixelTransformer);
           mismatchCount++;
         }
       } else {
-        copyErrorPixel(diffImageData, offset, pixel1WithBrightness, pixel2WithBrightness, errorPixelTransformer);
+        copyErrorPixel(diffImageData, offset, pixel1WithL, pixel2WithL, errorPixelTransformer);
         mismatchCount++;
       }
     } else {
@@ -386,8 +384,8 @@ const parseOptions = (options?: ResembleOptions): CompareImagesOptions => {
       green: 32,
       blue: 32,
       alpha: 32,
-      minBrightness: 64,
-      maxBrightness: 96
+      minL: 64,
+      maxL: 96
     }
     : ignoreType === 'colors'
       ? {
@@ -395,8 +393,8 @@ const parseOptions = (options?: ResembleOptions): CompareImagesOptions => {
         green: 16, // unused -> default
         blue: 16, // unused -> default
         alpha: 16,
-        minBrightness: 16,
-        maxBrightness: 240
+        minL: 16,
+        maxL: 240
       }
       : ignoreType === 'nothing'
         ? {
@@ -404,16 +402,16 @@ const parseOptions = (options?: ResembleOptions): CompareImagesOptions => {
           green: 0,
           blue: 0,
           alpha: 0,
-          minBrightness: 0,
-          maxBrightness: 255
+          minL: 0,
+          maxL: 255
         }
         : {
           red: 16,
           green: 16,
           blue: 16,
           alpha: 16,
-          minBrightness: 16,
-          maxBrightness: 240
+          minL: 16,
+          maxL: 240
         };
   const ignoreAntialiasing = ignoreType === 'antialiasing';
   const ignoreColors = ignoreType === 'colors';
