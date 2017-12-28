@@ -1,5 +1,3 @@
-import jpeg = require('jpeg-js');
-import png = require('pngjs');
 import { U8 } from './type/u8';
 import { Color } from './type/color';
 import { CompareImagesOptions } from './type/compare-images-options';
@@ -15,6 +13,7 @@ import { Rectangle } from './type/rectangle';
 import { ResembleOptions } from './type/resemble-options';
 import { Tolerance } from './type/tolerance';
 import { getBrightness } from './get-brightness';
+import { convertToJPG, convertToPNG } from './convert-image';
 import { loadImage } from './load-image';
 import { newImageBasedOn } from './new-image';
 
@@ -315,13 +314,11 @@ const analyseImages = (
     rawMisMatchPercentage,
     misMatchPercentage: rawMisMatchPercentage.toFixed(2),
     analysisTime: Date.now() - time,
-    getDiffImage: function (_text) { return diffImage; },
+    getDiffImage: function (_text) {
+      return convertToPNG(diffImage);
+    },
     getDiffImageAsJPEG: function (quality) {
-      return jpeg.encode({
-        data: diffImageData,
-        width: image1.width,
-        height: image1.height
-      }, typeof quality !== 'undefined' ? quality : 50).data;
+      return convertToJPG(diffImage, quality);
     }
   };
 };
