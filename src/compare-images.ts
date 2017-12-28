@@ -212,10 +212,10 @@ const isAntialiased = (
 const analyseImages = (
   image1: Image,
   image2: Image,
-  width: number,
-  height: number,
   options: CompareImagesOptions
 ): CompareResult => {
+  const width = Math.max(image1.width, image2.width);
+  const height = Math.max(image1.height, image2.height);
   const {
     errorPixelTransformer,
     ignoreAntialiasing,
@@ -445,16 +445,8 @@ const compareImages = (file1: File, file2: File, options?: ResembleOptions): Pro
   return Promise
     .all([loadImageData(file1), loadImageData(file2)])
     .then(([image1, image2]: [Image, Image]) => {
-      const width = image1.width > image2.width ? image1.width : image2.width;
-      const height = image1.height > image2.height ? image1.height : image2.height;
       //lksv: normalization removed
-      return analyseImages(
-        image1,
-        image2,
-        width,
-        height,
-        parseOptions(options)
-      );
+      return analyseImages(image1, image2, parseOptions(options));
     });
 };
 
