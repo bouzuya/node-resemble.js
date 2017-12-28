@@ -11,10 +11,10 @@ interface Lightness {
   l: number;
 }
 
-interface HueInfo {
+interface Hue {
   h: number;
 }
 
 export type PixelWithL = Pixel & Lightness;
 
-export type PixelWithLAndHueInfo = Pixel & Lightness & HueInfo;
+export type PixelWithHL = Pixel & Lightness & Hue;

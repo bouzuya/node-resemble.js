@@ -6,7 +6,7 @@ import { FileNameOrData } from './type/file-name-or-data';
 import { Image } from './type/image';
 import {
   Pixel,
-  PixelWithLAndHueInfo,
+  PixelWithHL,
   PixelWithL
 } from './type/pixel';
 import { Rectangle } from './type/rectangle';
@@ -157,7 +157,7 @@ const toPixelWithL = (p: Pixel): PixelWithL => {
   };
 };
 
-const toPixelWithLAndHue = (p: PixelWithL): PixelWithLAndHueInfo => {
+const toPixelWithHL = (p: PixelWithL): PixelWithHL => {
   return {
     r: p.r,
     g: p.g,
@@ -180,7 +180,7 @@ const isAntialiased = (
   let hasHighContrastSibling = 0;
   let hasSiblingWithDifferentHue = 0;
   let hasEquivilantSibling = 0;
-  const centerPixelWithLAndHue = toPixelWithLAndHue(centerPixel);
+  const centerPixelWithHL = toPixelWithHL(centerPixel);
   for (let i = distance * -1; i <= distance; i++) {
     for (let j = distance * -1; j <= distance; j++) {
       if (i === 0 && j === 0) continue; // ignore source pixel
@@ -188,14 +188,14 @@ const isAntialiased = (
       const aroundPixel = getPixel(imageData, offset);
       if (aroundPixel === null) continue;
       const targetPixWithL = toPixelWithL(aroundPixel);
-      const targetPixWithLAndHue = toPixelWithLAndHue(targetPixWithL);
-      if (isContrasting(centerPixelWithLAndHue, targetPixWithLAndHue, tolerance)) {
+      const targetPixWithHL = toPixelWithHL(targetPixWithL);
+      if (isContrasting(centerPixelWithHL, targetPixWithHL, tolerance)) {
         hasHighContrastSibling++;
       }
-      if (isRGBSame(centerPixelWithLAndHue, targetPixWithLAndHue)) {
+      if (isRGBSame(centerPixelWithHL, targetPixWithHL)) {
         hasEquivilantSibling++;
       }
-      if (Math.abs(targetPixWithLAndHue.h - centerPixelWithLAndHue.h) > 0.3) {
+      if (Math.abs(targetPixWithHL.h - centerPixelWithHL.h) > 0.3) {
         hasSiblingWithDifferentHue++;
       }
       if (hasSiblingWithDifferentHue > 1 || hasHighContrastSibling > 1) {
