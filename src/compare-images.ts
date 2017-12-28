@@ -228,14 +228,14 @@ const analyseImages = (
   const imageData1 = image1.data;
   const imageData2 = image2.data;
   //TODO
-  const image = new png.PNG({
+  const diffImage = new png.PNG({
     width: image1.width,
     height: image1.height,
     deflateChunkSize: image1.deflateChunkSize,
     deflateLevel: image1.deflateLevel,
     deflateStrategy: image1.deflateStrategy,
   });
-  const targetPix = image.data;
+  const diffImageData = diffImage.data;
   let mismatchCount = 0;
   const time = Date.now();
   let skip: number | undefined;
@@ -248,7 +248,7 @@ const analyseImages = (
     const offset = (y * width + x) * 4;
     if (skip) { // only skip if the image isn't small
       if (y % skip === 0 || x % skip === 0) {
-        copyPixel(targetPix, offset, {
+        copyPixel(diffImageData, offset, {
           r: 0,
           b: 0,
           g: 0,
@@ -272,7 +272,7 @@ const analyseImages = (
           (x < currentRectangle[0] + currentRectangle[2])
         ) {
           const pixel2_ = pixel2 as PixelWithBrightnessInfo; // FIXME: addBrightnessInfo(pixel2) has not been called yet
-          copyGrayScalePixel(targetPix, offset, pixel2_, pixelTransparency); // ? pixel2.brightness is not defined
+          copyGrayScalePixel(diffImageData, offset, pixel2_, pixelTransparency); // ? pixel2.brightness is not defined
           //copyPixel(targetPix, offset, pixel1, pixelTransparency);
           return;
         }
@@ -283,13 +283,13 @@ const analyseImages = (
       const pixel1WithBrightness = toPixelWithBrightness(pixel1);
       const pixel2WithBrightness = toPixelWithBrightness(pixel2);
       if (isPixelBrightnessSimilar(pixel1WithBrightness, pixel2WithBrightness, tolerance)) {
-        copyGrayScalePixel(targetPix, offset, pixel2WithBrightness, pixelTransparency);
+        copyGrayScalePixel(diffImageData, offset, pixel2WithBrightness, pixelTransparency);
       } else {
-        copyErrorPixel(targetPix, offset, pixel1WithBrightness, pixel2WithBrightness, errorPixelTransformer);
+        copyErrorPixel(diffImageData, offset, pixel1WithBrightness, pixel2WithBrightness, errorPixelTransformer);
         mismatchCount++;
       }
     } else if (isRGBSimilar(pixel1, pixel2, tolerance)) {
-      copyPixel(targetPix, offset, pixel1, pixelTransparency);
+      copyPixel(diffImageData, offset, pixel1, pixelTransparency);
     } else if (ignoreAntialiasing) {
       const pixel1WithBrightness = toPixelWithBrightness(pixel1); // jit pixel info augmentation looks a little weird, sorry.
       const pixel2WithBrightness = toPixelWithBrightness(pixel2);
@@ -298,17 +298,17 @@ const analyseImages = (
         isAntialiased(pixel2WithBrightness, imageData2, y, x, width, tolerance)
       ) {
         if (isPixelBrightnessSimilar(pixel1WithBrightness, pixel2WithBrightness, tolerance)) {
-          copyGrayScalePixel(targetPix, offset, pixel2WithBrightness, pixelTransparency);
+          copyGrayScalePixel(diffImageData, offset, pixel2WithBrightness, pixelTransparency);
         } else {
-          copyErrorPixel(targetPix, offset, pixel1WithBrightness, pixel2WithBrightness, errorPixelTransformer);
+          copyErrorPixel(diffImageData, offset, pixel1WithBrightness, pixel2WithBrightness, errorPixelTransformer);
           mismatchCount++;
         }
       } else {
-        copyErrorPixel(targetPix, offset, pixel1WithBrightness, pixel2WithBrightness, errorPixelTransformer);
+        copyErrorPixel(diffImageData, offset, pixel1WithBrightness, pixel2WithBrightness, errorPixelTransformer);
         mismatchCount++;
       }
     } else {
-      copyErrorPixel(targetPix, offset, pixel1, pixel2, errorPixelTransformer);
+      copyErrorPixel(diffImageData, offset, pixel1, pixel2, errorPixelTransformer);
       mismatchCount++;
     }
   });
@@ -324,10 +324,10 @@ const analyseImages = (
     rawMisMatchPercentage,
     misMatchPercentage: rawMisMatchPercentage.toFixed(2),
     analysisTime: Date.now() - time,
-    getDiffImage: function (_text) { return image; },
+    getDiffImage: function (_text) { return diffImage; },
     getDiffImageAsJPEG: function (quality) {
       return jpeg.encode({
-        data: targetPix,
+        data: diffImageData,
         width: image1.width,
         height: image1.height
       }, typeof quality !== 'undefined' ? quality : 50).data;
