@@ -1,8 +1,8 @@
-import { Color } from './color';
+import { RGBA } from './rgba';
 import { Rectangle } from './rectangle';
 
 export interface ResembleOptions {
-  errorColor?: Partial<Color>;
+  errorColor?: Partial<RGBA>;
   errorType?: 'flat' | 'movement';
   largeImageThreshold?: number;
   transparency?: number;

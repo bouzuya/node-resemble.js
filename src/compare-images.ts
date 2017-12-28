@@ -1,5 +1,5 @@
 import { U8 } from './type/u8';
-import { Color } from './type/color';
+import { RGBA } from './type/rgba';
 import { CompareImagesOptions } from './type/compare-images-options';
 import { CompareResult } from './type/compare-result';
 import { FileNameOrData } from './type/file-name-or-data';
@@ -329,8 +329,8 @@ const analyseImages = (
 const parseOptions = (options?: ResembleOptions): CompareImagesOptions => {
   const opts = options || {};
   const getColorValue = (
-    color: Partial<Color> | undefined,
-    key: keyof Color,
+    color: Partial<RGBA> | undefined,
+    key: keyof RGBA,
     defaultValue: U8
   ): U8 => {
     if (typeof color === 'undefined') return defaultValue;
@@ -338,7 +338,7 @@ const parseOptions = (options?: ResembleOptions): CompareImagesOptions => {
     if (typeof value === 'undefined') return defaultValue;
     return value;
   };
-  const errorPixelColor: Color = {
+  const errorPixelColor: RGBA = {
     red: getColorValue(opts.errorColor, 'red', 255),
     green: getColorValue(opts.errorColor, 'green', 0),
     blue: getColorValue(opts.errorColor, 'blue', 255),
