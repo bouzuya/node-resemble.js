@@ -13,9 +13,12 @@ import { Rectangle } from './type/rectangle';
 import { ResembleOptions } from './type/resemble-options';
 import { Tolerance } from './type/tolerance';
 import { getBrightness } from './get-brightness';
-import { convertToJPG, convertToPNG } from './convert-image';
-import { loadImage } from './load-image';
-import { newImageBasedOn } from './new-image';
+import {
+  convertToJPG,
+  convertToPNG,
+  loadImage,
+  newImageBasedOn
+} from './image';
 
 const loop = (
   height: number,

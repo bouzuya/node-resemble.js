@@ -1,7 +1,7 @@
 import { FileNameOrData } from './type/file-name-or-data';
 import { ParsedImage } from './type/parsed-image';
 import { getBrightness } from './get-brightness';
-import { loadImage } from './load-image';
+import { loadImage } from './image';
 
 const parseImage = (file: FileNameOrData): Promise<ParsedImage> => {
   return loadImage(file).then(({ data, width, height }) => {
