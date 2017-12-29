@@ -124,20 +124,21 @@ const analyseImages = (
     const pixel1 = getPixel(imageData1, offset);
     const pixel2 = getPixel(imageData2, offset);
     if (pixel1 === null || pixel2 === null) return;
-    if (ignoreRectangles) {
-      for (let rectagnlesIdx = 0; rectagnlesIdx < ignoreRectangles.length; rectagnlesIdx++) {
-        let [rx, ry, rwidth, rheight] = ignoreRectangles[rectagnlesIdx];
-        if ((y >= ry) && (y < ry + rheight) && (x >= rx) && (x < rx + rwidth)) {
-          const pixel2L = getLightness(pixel2);
-          setPixel(
-            diffImageData,
-            offset,
-            newGrayScalePixel(pixel2L, pixel2.a * pixelTransparency)
-            // newPixel(pixel1.r, pixel1.g, pixel1.b, pixel1.a * pixelTransparency)
-          );
-          return;
-        }
-      }
+
+    if (
+      ignoreRectangles !== null &&
+      ignoreRectangles.some(([rx, ry, rw, rh]) => {
+        return (y >= ry) && (y < ry + rh) && (x >= rx) && (x < rx + rw);
+      })
+    ) {
+      const pixel2L = getLightness(pixel2);
+      setPixel(
+        diffImageData,
+        offset,
+        newGrayScalePixel(pixel2L, pixel2.a * pixelTransparency)
+        // newPixel(pixel1.r, pixel1.g, pixel1.b, pixel1.a * pixelTransparency)
+      );
+      return;
     }
 
     if (ignoreColors) {
