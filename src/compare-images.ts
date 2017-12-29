@@ -125,7 +125,7 @@ const analyseImages = (
   //TODO
   const diffImage = newImageBasedOn(image1);
   const diffImageData = diffImage.data;
-  let mismatchCount = 0;
+  let misMatchPixelCount = 0;
   const time = Date.now();
   let skip: number | undefined;
   if (!!largeImageThreshold && ignoreAntialiasing && (width > largeImageThreshold || height > largeImageThreshold)) {
@@ -184,11 +184,12 @@ const analyseImages = (
       );
     } else {
       setPixel(diffImageData, offset, newErrorPixel(pixel1, pixel2));
-      mismatchCount++;
+      misMatchPixelCount++;
     }
   });
 
-  const rawMisMatchPercentage = (mismatchCount / (height * width) * 100);
+  const allPixelCount = height * width;
+  const rawMisMatchPercentage = (misMatchPixelCount / allPixelCount * 100);
   return {
     isSameDimensions:
       image1.width === image2.width && image1.height === image2.height,
