@@ -118,7 +118,7 @@ const analyseImages = (
     ignoreRectangles,
     largeImageThreshold,
     tolerance,
-    transparency: pixelTransparency
+    transparency
   } = options;
   const imageData1 = image1.data;
   const imageData2 = image2.data;
@@ -151,11 +151,10 @@ const analyseImages = (
         return (y >= ry) && (y < ry + rh) && (x >= rx) && (x < rx + rw);
       })
     ) {
-      const pixel2L = getLightness(pixel2);
       setPixel(
         diffImageData,
         offset,
-        newGrayScalePixel(pixel2L, pixel2.a * pixelTransparency)
+        newGrayScalePixel(getLightness(pixel2), pixel2.a * transparency)
         // newPixel(pixel1.r, pixel1.g, pixel1.b, pixel1.a * pixelTransparency)
       );
       return;
@@ -166,8 +165,8 @@ const analyseImages = (
         diffImageData,
         offset,
         options.ignoreColors
-          ? newGrayScalePixel(getLightness(pixel2), pixel2.a * pixelTransparency)
-          : newPixel(pixel1.r, pixel1.g, pixel1.b, pixel1.a * pixelTransparency)
+          ? newGrayScalePixel(getLightness(pixel2), pixel2.a * transparency)
+          : newPixel(pixel1.r, pixel1.g, pixel1.b, pixel1.a * transparency)
       );
     } else if (
       !options.ignoreColors && // ?
@@ -181,7 +180,7 @@ const analyseImages = (
       setPixel(
         diffImageData,
         offset,
-        newGrayScalePixel(getLightness(pixel2), pixel2.a * pixelTransparency)
+        newGrayScalePixel(getLightness(pixel2), pixel2.a * transparency)
       );
     } else {
       setPixel(diffImageData, offset, newErrorPixel(pixel1, pixel2));
