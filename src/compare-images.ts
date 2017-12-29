@@ -133,19 +133,19 @@ const analyseImages = (
   } = options;
   const imageData1 = image1.data;
   const imageData2 = image2.data;
-  //TODO
-  const diffImage = newImageBasedOn(image1);
+  const diffImage = newImageBasedOn(image1); // TODO
   const diffImageData = diffImage.data;
-
-  let skip: number | undefined;
-  if (!!largeImageThreshold && ignoreAntialiasing && (width > largeImageThreshold || height > largeImageThreshold)) {
-    skip = 6;
-  }
+  const skip: number | null =
+    !!largeImageThreshold &&
+      ignoreAntialiasing &&
+      (width > largeImageThreshold || height > largeImageThreshold)
+      ? 6
+      : null;
 
   let misMatchPixelCount = 0;
   loop(height, width, function (y, x) {
     const offset = (y * width + x) * 4;
-    if (skip) { // only skip if the image isn't small
+    if (skip !== null) { // only skip if the image isn't small
       if (y % skip === 0 || x % skip === 0) {
         setPixel(diffImageData, offset, newPixel(0, 0, 0, 0));
         return;
