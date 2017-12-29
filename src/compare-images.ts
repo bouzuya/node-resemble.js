@@ -53,7 +53,6 @@ const isGrayScaleSimilar = (p1: Pixel, p2: Pixel, tolerance: Tolerance) => {
 
 const isAntialiased = (
   centerPixel: Pixel,
-  centerL: number,
   imageData: Buffer,
   y: number,
   x: number,
@@ -65,6 +64,7 @@ const isAntialiased = (
   let hasEquivilantSibling = 0;
   const distance = 1;
   const centerH = getHue(centerPixel);
+  const centerL = getLightness(centerPixel);
   for (let i = distance * -1; i <= distance; i++) {
     for (let j = distance * -1; j <= distance; j++) {
       if (i === 0 && j === 0) continue; // ignore source pixel
@@ -177,19 +177,17 @@ const analyseImages = (
       );
     } else if (ignoreAntialiasing) {
       // !ignoreColors && !isColorSimilar && ignoreAntialiasing
-      const pixel1L = getLightness(pixel1); // jit pixel info augmentation looks a little weird, sorry.
-      const pixel2L = getLightness(pixel2);
       if (
         (
-          isAntialiased(pixel1, pixel1L, imageData1, y, x, width, tolerance) ||
-          isAntialiased(pixel2, pixel2L, imageData2, y, x, width, tolerance)
+          isAntialiased(pixel1, imageData1, y, x, width, tolerance) ||
+          isAntialiased(pixel2, imageData2, y, x, width, tolerance)
         ) && isGrayScaleSimilar(pixel1, pixel2, tolerance)
       ) {
         // !ignoreColors && !isColorSimilar && ignoreAntialiasing && (isAntialiased && isGrayScaleSimilar)
         setPixel(
           diffImageData,
           offset,
-          newGrayScalePixel(pixel2L, pixel2.a * pixelTransparency)
+          newGrayScalePixel(getLightness(pixel2), pixel2.a * pixelTransparency)
         );
       } else {
         // !ignoreColors && !isColorSimilar && ignoreAntialiasing && !(isAntialiased && isGrayScaleSimilar)
