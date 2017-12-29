@@ -121,6 +121,7 @@ const analyseImages = (
   options: CompareImagesOptions
 ): CompareResult => {
   const newGrayScalePixel = (l: number, a: U8): Pixel => newPixel(l, l, l, a);
+  const startTime = Date.now();
   const width = Math.max(image1.width, image2.width);
   const height = Math.max(image1.height, image2.height);
   const {
@@ -135,13 +136,13 @@ const analyseImages = (
   //TODO
   const diffImage = newImageBasedOn(image1);
   const diffImageData = diffImage.data;
-  let misMatchPixelCount = 0;
-  const time = Date.now();
+
   let skip: number | undefined;
   if (!!largeImageThreshold && ignoreAntialiasing && (width > largeImageThreshold || height > largeImageThreshold)) {
     skip = 6;
   }
 
+  let misMatchPixelCount = 0;
   loop(height, width, function (y, x) {
     const offset = (y * width + x) * 4;
     if (skip) { // only skip if the image isn't small
@@ -195,6 +196,7 @@ const analyseImages = (
 
   const allPixelCount = height * width;
   const rawMisMatchPercentage = (misMatchPixelCount / allPixelCount * 100);
+  const endTime = Date.now();
   return {
     isSameDimensions:
       image1.width === image2.width && image1.height === image2.height,
@@ -204,7 +206,7 @@ const analyseImages = (
     },
     rawMisMatchPercentage,
     misMatchPercentage: rawMisMatchPercentage.toFixed(2),
-    analysisTime: Date.now() - time,
+    analysisTime: endTime - startTime,
     getDiffImage: function (_text) {
       return convertToPNG(diffImage);
     },
