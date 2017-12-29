@@ -6,7 +6,6 @@ import { FileNameOrData } from './type/file-name-or-data';
 import { Image } from './type/image';
 import {
   Pixel,
-  PixelWithHL,
   PixelWithL
 } from './type/pixel';
 import { Rectangle } from './type/rectangle';
@@ -68,14 +67,6 @@ const isRGBASimilar = (p1: Pixel, p2: Pixel, tolerance: Tolerance): boolean => {
   return r && g && b && a;
 };
 
-const isContrasting = (
-  p1: PixelWithL,
-  p2: PixelWithL,
-  tolerance: Tolerance
-): boolean => {
-  return Math.abs(p1.l - p2.l) > tolerance.maxL;
-};
-
 const copyErrorPixel = (
   imageData: Buffer,
   offset: number,
@@ -114,17 +105,6 @@ const toPixelWithL = (p: Pixel): PixelWithL => {
   };
 };
 
-const toPixelWithHL = (p: PixelWithL): PixelWithHL => {
-  return {
-    r: p.r,
-    g: p.g,
-    b: p.b,
-    a: p.a,
-    l: p.l,
-    h: getHue(p),
-  };
-};
-
 const isAntialiased = (
   centerPixel: PixelWithL,
   imageData: Buffer,
@@ -133,26 +113,27 @@ const isAntialiased = (
   width: number,
   tolerance: Tolerance
 ): boolean => {
-  let distance = 1;
   let hasHighContrastSibling = 0;
   let hasSiblingWithDifferentHue = 0;
   let hasEquivilantSibling = 0;
-  const centerPixelWithHL = toPixelWithHL(centerPixel);
+  const distance = 1;
+  const centerH = getHue(centerPixel);
   for (let i = distance * -1; i <= distance; i++) {
     for (let j = distance * -1; j <= distance; j++) {
       if (i === 0 && j === 0) continue; // ignore source pixel
       const offset = ((y + j) * width + (x + i)) * 4;
       const aroundPixel = getPixel(imageData, offset);
       if (aroundPixel === null) continue;
-      const targetPixWithL = toPixelWithL(aroundPixel);
-      const targetPixWithHL = toPixelWithHL(targetPixWithL);
-      if (isContrasting(centerPixelWithHL, targetPixWithHL, tolerance)) {
+      const aroundL = getLightness(aroundPixel);
+      const aroundH = getHue(aroundPixel);
+      // isContrasting
+      if (Math.abs(centerPixel.l - aroundL) > tolerance.maxL) {
         hasHighContrastSibling++;
       }
-      if (isRGBSame(centerPixelWithHL, targetPixWithHL)) {
+      if (isRGBSame(centerPixel, aroundPixel)) {
         hasEquivilantSibling++;
       }
-      if (Math.abs(targetPixWithHL.h - centerPixelWithHL.h) > 0.3) {
+      if (Math.abs(aroundH - centerH) > 0.3) {
         hasSiblingWithDifferentHue++;
       }
       if (hasSiblingWithDifferentHue > 1 || hasHighContrastSibling > 1) {
