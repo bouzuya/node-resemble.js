@@ -39,14 +39,6 @@ const isColorSimilar = (
   return b1 === b2 || Math.abs(b1 - b2) < tolerance[color];
 };
 
-const isRGBASimilar = (p1: Pixel, p2: Pixel, tolerance: Tolerance): boolean => {
-  const r = isColorSimilar(p1.r, p2.r, 'r', tolerance);
-  const g = isColorSimilar(p1.g, p2.g, 'g', tolerance);
-  const b = isColorSimilar(p1.b, p2.b, 'b', tolerance);
-  const a = isColorSimilar(p1.a, p2.a, 'a', tolerance);
-  return r && g && b && a;
-};
-
 const isAntialiased = (
   centerPixel: Pixel,
   centerL: number,
@@ -164,7 +156,12 @@ const analyseImages = (
         setPixel(diffImageData, offset, newErrorPixel(pixel1, pixel2));
         mismatchCount++;
       }
-    } else if (isRGBASimilar(pixel1, pixel2, tolerance)) {
+    } else if (
+      isColorSimilar(pixel1.r, pixel2.r, 'r', tolerance) &&
+      isColorSimilar(pixel1.g, pixel2.g, 'g', tolerance) &&
+      isColorSimilar(pixel1.b, pixel2.b, 'b', tolerance) &&
+      isColorSimilar(pixel1.a, pixel2.a, 'a', tolerance)
+    ) {
       setPixel(
         diffImageData,
         offset,
