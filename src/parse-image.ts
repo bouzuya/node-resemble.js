@@ -17,7 +17,7 @@ const parseImage = (file: FileNameOrData): Promise<ParsedImage> => {
         let r = data[offset];
         let g = data[offset + 1];
         let b = data[offset + 2];
-        let l = getLightness(r, g, b);
+        let l = getLightness({ r, g, b });
         pixelCount += 1;
         rTotal += r / 255 * 100;
         gTotal += g / 255 * 100;

@@ -136,7 +136,7 @@ const toPixelWithL = (p: Pixel): PixelWithL => {
     g: p.g,
     b: p.b,
     a: p.a,
-    l: getLightness(p.r, p.g, p.b) // 'corrected' lightness
+    l: getLightness(p) // 'corrected' lightness
   };
 };
 
@@ -147,7 +147,7 @@ const toPixelWithHL = (p: PixelWithL): PixelWithHL => {
     b: p.b,
     a: p.a,
     l: p.l,
-    h: getHue(p.r, p.g, p.b),
+    h: getHue(p),
   };
 };
 

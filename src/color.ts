@@ -1,6 +1,6 @@
-import { U8 } from './type/u8';
+import { RGB } from './type/rgb';
 
-const getHue = (r: U8, g: U8, b: U8): number => {
+const getHue = ({ r, g, b }: RGB): number => {
   const r1 = r / 255;
   const g1 = g / 255;
   const b1 = b / 255;
@@ -16,7 +16,7 @@ const getHue = (r: U8, g: U8, b: U8): number => {
   }
 };
 
-const getLightness = (r: U8, g: U8, b: U8): number => {
+const getLightness = ({ r, g, b }: RGB): number => {
   return 0.3 * r + 0.59 * g + 0.11 * b;
 };
 
