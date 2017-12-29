@@ -63,16 +63,6 @@ const copyPixel = (
   setPixel(imageData, offset, newPixel(p1.r, p1.g, p1.b, p1.a * pixelTransparency));
 };
 
-const copyGrayScalePixel = (
-  imageData: Buffer,
-  offset: number,
-  a: U8,
-  l: number,
-  pixelTransparency: number
-): void => {
-  setPixel(imageData, offset, newPixel(l, l, l, a * pixelTransparency));
-};
-
 const isAntialiased = (
   centerPixel: Pixel,
   centerL: number,
@@ -118,6 +108,7 @@ const analyseImages = (
   image2: Image,
   options: CompareImagesOptions
 ): CompareResult => {
+  const newGrayScalePixel = (l: number, a: U8): Pixel => newPixel(l, l, l, a);
   const width = Math.max(image1.width, image2.width);
   const height = Math.max(image1.height, image2.height);
   const {
@@ -163,7 +154,11 @@ const analyseImages = (
         let [rx, ry, rwidth, rheight] = ignoreRectangles[rectagnlesIdx];
         if ((y >= ry) && (y < ry + rheight) && (x >= rx) && (x < rx + rwidth)) {
           const pixel2L = getLightness(pixel2);
-          copyGrayScalePixel(diffImageData, offset, pixel2.a, pixel2L, pixelTransparency); // ? pixel2.l is not defined
+          setPixel(
+            diffImageData,
+            offset,
+            newGrayScalePixel(pixel2L, pixel2.a * pixelTransparency)
+          );
           //copyPixel(targetPix, offset, pixel1, pixelTransparency);
           return;
         }
@@ -177,7 +172,11 @@ const analyseImages = (
         isColorSimilar(pixel1.a, pixel2.a, 'a', tolerance) &&
         isColorSimilar(pixel1L, pixel2L, 'minL', tolerance)
       ) {
-        copyGrayScalePixel(diffImageData, offset, pixel2.a, pixel2L, pixelTransparency);
+        setPixel(
+          diffImageData,
+          offset,
+          newGrayScalePixel(pixel2L, pixel2.a * pixelTransparency)
+        );
       } else {
         setPixel(diffImageData, offset, newErrorPixel(pixel1, pixel2));
         mismatchCount++;
@@ -195,7 +194,11 @@ const analyseImages = (
           isColorSimilar(pixel1.a, pixel2.a, 'a', tolerance) &&
           isColorSimilar(pixel1L, pixel2L, 'minL', tolerance)
         ) {
-          copyGrayScalePixel(diffImageData, offset, pixel2.a, pixel2L, pixelTransparency);
+          setPixel(
+            diffImageData,
+            offset,
+            newGrayScalePixel(pixel2L, pixel2.a * pixelTransparency)
+          );
         } else {
           setPixel(diffImageData, offset, newErrorPixel(pixel1, pixel2));
           mismatchCount++;
