@@ -4,6 +4,8 @@ import * as path from 'path';
 import png = require('pngjs');
 import { FileNameOrData } from './type/file-name-or-data';
 import { Image } from './type/image';
+import { Pixel } from './type/pixel';
+import { U8 } from './type/u8';
 
 const convertToJPG = (image: Image, quality?: number): Buffer => {
   return jpeg.encode({
@@ -15,6 +17,17 @@ const convertToJPG = (image: Image, quality?: number): Buffer => {
 
 const convertToPNG = (image: Image): png.PNG => {
   return image as png.PNG; // downcast
+};
+
+const getPixel = (imageData: Buffer, offset: number): Pixel | null => {
+  const r = imageData[offset];
+  if (typeof r === 'undefined') return null;
+  return {
+    r: r,
+    g: imageData[offset + 1],
+    b: imageData[offset + 2],
+    a: imageData[offset + 3]
+  };
 };
 
 const loadImage = (file: FileNameOrData): Promise<Image> => {
@@ -51,19 +64,33 @@ const loadImage = (file: FileNameOrData): Promise<Image> => {
   });
 };
 
-const newImageBasedOn = (image1: Image): Image => {
+const newImageBasedOn = (image: Image): Image => {
   return new png.PNG({
-    width: image1.width,
-    height: image1.height,
-    deflateChunkSize: image1.deflateChunkSize,
-    deflateLevel: image1.deflateLevel,
-    deflateStrategy: image1.deflateStrategy,
+    width: image.width,
+    height: image.height,
+    deflateChunkSize: image.deflateChunkSize,
+    deflateLevel: image.deflateLevel,
+    deflateStrategy: image.deflateStrategy,
   });
+};
+
+const newPixel = (r: U8, g: U8, b: U8, a: U8): Pixel => {
+  return { r, g, b, a };
+};
+
+const setPixel = (imageData: Buffer, offset: number, p: Pixel): void => {
+  imageData[offset] = p.r;
+  imageData[offset + 1] = p.g;
+  imageData[offset + 2] = p.b;
+  imageData[offset + 3] = p.a;
 };
 
 export {
   convertToJPG,
   convertToPNG,
+  getPixel,
   loadImage,
-  newImageBasedOn
+  newImageBasedOn,
+  newPixel,
+  setPixel
 };

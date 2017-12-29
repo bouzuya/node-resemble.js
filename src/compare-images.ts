@@ -15,8 +15,11 @@ import { Tolerance } from './type/tolerance';
 import {
   convertToJPG,
   convertToPNG,
+  getPixel,
   loadImage,
-  newImageBasedOn
+  newImageBasedOn,
+  newPixel,
+  setPixel
 } from './image';
 
 const loop = (
@@ -73,35 +76,6 @@ const isContrasting = (
   return Math.abs(p1.l - p2.l) > tolerance.maxL;
 };
 
-const getPixel = (imageData: Buffer, offset: number): Pixel | null => {
-  const r = imageData[offset];
-  if (typeof r === 'undefined') return null;
-  return {
-    r: r,
-    g: imageData[offset + 1],
-    b: imageData[offset + 2],
-    a: imageData[offset + 3]
-  };
-};
-
-const setPixel = (imageData: Buffer, offset: number, p: Pixel): void => {
-  setRGBA(imageData, offset, p.r, p.g, p.b, p.a);
-};
-
-const setRGBA = (
-  imageData: Buffer,
-  offset: number,
-  r: U8,
-  g: U8,
-  b: U8,
-  a: U8
-): void => {
-  imageData[offset] = r;
-  imageData[offset + 1] = g;
-  imageData[offset + 2] = b;
-  imageData[offset + 3] = a;
-};
-
 const copyErrorPixel = (
   imageData: Buffer,
   offset: number,
@@ -118,7 +92,7 @@ const copyPixel = (
   p1: Pixel,
   pixelTransparency: number
 ): void => {
-  setRGBA(imageData, offset, p1.r, p1.g, p1.b, p1.a * pixelTransparency);
+  setPixel(imageData, offset, newPixel(p1.r, p1.g, p1.b, p1.a * pixelTransparency));
 };
 
 const copyGrayScalePixel = (
@@ -127,7 +101,7 @@ const copyGrayScalePixel = (
   p: PixelWithL,
   pixelTransparency: number
 ): void => {
-  setRGBA(imageData, offset, p.l, p.l, p.l, p.a * pixelTransparency);
+  setPixel(imageData, offset, newPixel(p.l, p.l, p.l, p.a * pixelTransparency));
 };
 
 const toPixelWithL = (p: Pixel): PixelWithL => {

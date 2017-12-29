@@ -1,7 +1,7 @@
 import { getLightness } from './color';
 import { FileNameOrData } from './type/file-name-or-data';
 import { ParsedImage } from './type/parsed-image';
-import { loadImage } from './image';
+import { getPixel, loadImage } from './image';
 
 const parseImage = (file: FileNameOrData): Promise<ParsedImage> => {
   return loadImage(file).then(({ data, width, height }) => {
@@ -14,9 +14,9 @@ const parseImage = (file: FileNameOrData): Promise<ParsedImage> => {
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         let offset = (y * width + x) * 4;
-        let r = data[offset];
-        let g = data[offset + 1];
-        let b = data[offset + 2];
+        const p = getPixel(data, offset);
+        if (p === null) throw new Error();
+        const { r, g, b } = p;
         let l = getLightness({ r, g, b });
         pixelCount += 1;
         rTotal += r / 255 * 100;
