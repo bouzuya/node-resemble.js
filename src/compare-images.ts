@@ -4,10 +4,7 @@ import { CompareImagesOptions } from './type/compare-images-options';
 import { CompareResult } from './type/compare-result';
 import { FileNameOrData } from './type/file-name-or-data';
 import { Image } from './type/image';
-import {
-  Pixel,
-  PixelWithL
-} from './type/pixel';
+import { Pixel } from './type/pixel';
 import { Rectangle } from './type/rectangle';
 import { ResembleOptions } from './type/resemble-options';
 import { Tolerance } from './type/tolerance';
@@ -40,16 +37,6 @@ const isColorSimilar = (
   tolerance: Tolerance
 ): boolean => {
   return b1 === b2 || Math.abs(b1 - b2) < tolerance[color];
-};
-
-const isPixelLightnessSimilar = (
-  p1: PixelWithL,
-  p2: PixelWithL,
-  tolerance: Tolerance
-): boolean => {
-  const a = isColorSimilar(p1.a, p2.a, 'a', tolerance);
-  const l = isColorSimilar(p1.l, p2.l, 'minL', tolerance);
-  return l && a;
 };
 
 const isRGBSame = (p1: Pixel, p2: Pixel): boolean => {
@@ -89,24 +76,16 @@ const copyPixel = (
 const copyGrayScalePixel = (
   imageData: Buffer,
   offset: number,
-  p: PixelWithL,
+  a: U8,
+  l: number,
   pixelTransparency: number
 ): void => {
-  setPixel(imageData, offset, newPixel(p.l, p.l, p.l, p.a * pixelTransparency));
-};
-
-const toPixelWithL = (p: Pixel): PixelWithL => {
-  return {
-    r: p.r,
-    g: p.g,
-    b: p.b,
-    a: p.a,
-    l: getLightness(p) // 'corrected' lightness
-  };
+  setPixel(imageData, offset, newPixel(l, l, l, a * pixelTransparency));
 };
 
 const isAntialiased = (
-  centerPixel: PixelWithL,
+  centerPixel: Pixel,
+  centerL: number,
   imageData: Buffer,
   y: number,
   x: number,
@@ -127,7 +106,7 @@ const isAntialiased = (
       const aroundL = getLightness(aroundPixel);
       const aroundH = getHue(aroundPixel);
       // isContrasting
-      if (Math.abs(centerPixel.l - aroundL) > tolerance.maxL) {
+      if (Math.abs(centerL - aroundL) > tolerance.maxL) {
         hasHighContrastSibling++;
       }
       if (isRGBSame(centerPixel, aroundPixel)) {
@@ -193,8 +172,8 @@ const analyseImages = (
       for (let rectagnlesIdx = 0; rectagnlesIdx < ignoreRectangles.length; rectagnlesIdx++) {
         let [rx, ry, rwidth, rheight] = ignoreRectangles[rectagnlesIdx];
         if ((y >= ry) && (y < ry + rheight) && (x >= rx) && (x < rx + rwidth)) {
-          const pixel2_ = pixel2 as PixelWithL; // FIXME: toPixelWithL(pixel2) has not been called yet
-          copyGrayScalePixel(diffImageData, offset, pixel2_, pixelTransparency); // ? pixel2.l is not defined
+          const pixel2L = getLightness(pixel2);
+          copyGrayScalePixel(diffImageData, offset, pixel2.a, pixel2L, pixelTransparency); // ? pixel2.l is not defined
           //copyPixel(targetPix, offset, pixel1, pixelTransparency);
           return;
         }
@@ -202,31 +181,37 @@ const analyseImages = (
     }
 
     if (ignoreColors) {
-      const pixel1WithL = toPixelWithL(pixel1);
-      const pixel2WithL = toPixelWithL(pixel2);
-      if (isPixelLightnessSimilar(pixel1WithL, pixel2WithL, tolerance)) {
-        copyGrayScalePixel(diffImageData, offset, pixel2WithL, pixelTransparency);
+      const pixel1L = getLightness(pixel1);
+      const pixel2L = getLightness(pixel2);
+      if (
+        isColorSimilar(pixel1.a, pixel2.a, 'a', tolerance) &&
+        isColorSimilar(pixel1L, pixel2L, 'minL', tolerance)
+      ) {
+        copyGrayScalePixel(diffImageData, offset, pixel2.a, pixel2L, pixelTransparency);
       } else {
-        copyErrorPixel(diffImageData, offset, pixel1WithL, pixel2WithL, errorPixelTransformer);
+        copyErrorPixel(diffImageData, offset, pixel1, pixel2, errorPixelTransformer);
         mismatchCount++;
       }
     } else if (isRGBASimilar(pixel1, pixel2, tolerance)) {
       copyPixel(diffImageData, offset, pixel1, pixelTransparency);
     } else if (ignoreAntialiasing) {
-      const pixel1WithL = toPixelWithL(pixel1); // jit pixel info augmentation looks a little weird, sorry.
-      const pixel2WithL = toPixelWithL(pixel2);
+      const pixel1L = getLightness(pixel1); // jit pixel info augmentation looks a little weird, sorry.
+      const pixel2L = getLightness(pixel2);
       if (
-        isAntialiased(pixel1WithL, imageData1, y, x, width, tolerance) ||
-        isAntialiased(pixel2WithL, imageData2, y, x, width, tolerance)
+        isAntialiased(pixel1, pixel1L, imageData1, y, x, width, tolerance) ||
+        isAntialiased(pixel2, pixel2L, imageData2, y, x, width, tolerance)
       ) {
-        if (isPixelLightnessSimilar(pixel1WithL, pixel2WithL, tolerance)) {
-          copyGrayScalePixel(diffImageData, offset, pixel2WithL, pixelTransparency);
+        if (
+          isColorSimilar(pixel1.a, pixel2.a, 'a', tolerance) &&
+          isColorSimilar(pixel1L, pixel2L, 'minL', tolerance)
+        ) {
+          copyGrayScalePixel(diffImageData, offset, pixel2.a, pixel2L, pixelTransparency);
         } else {
-          copyErrorPixel(diffImageData, offset, pixel1WithL, pixel2WithL, errorPixelTransformer);
+          copyErrorPixel(diffImageData, offset, pixel1, pixel2, errorPixelTransformer);
           mismatchCount++;
         }
       } else {
-        copyErrorPixel(diffImageData, offset, pixel1WithL, pixel2WithL, errorPixelTransformer);
+        copyErrorPixel(diffImageData, offset, pixel1, pixel2, errorPixelTransformer);
         mismatchCount++;
       }
     } else {
