@@ -30,13 +30,25 @@ const loop = (
   }
 };
 
-const isColorSimilar = (
+const isSimilar = (
   b1: U8,
   b2: U8,
   color: keyof Tolerance,
   tolerance: Tolerance
 ): boolean => {
   return b1 === b2 || Math.abs(b1 - b2) < tolerance[color];
+};
+
+const isColorSimilar = (p1: Pixel, p2: Pixel, tolerance: Tolerance) => {
+  return isSimilar(p1.r, p2.r, 'r', tolerance) &&
+    isSimilar(p1.g, p2.g, 'g', tolerance) &&
+    isSimilar(p1.b, p2.b, 'b', tolerance) &&
+    isSimilar(p1.a, p2.a, 'a', tolerance);
+};
+
+const isGrayScaleSimilar = (p1: Pixel, p2: Pixel, tolerance: Tolerance) => {
+  return isSimilar(p1.a, p2.a, 'a', tolerance) &&
+    isSimilar(getLightness(p1), getLightness(p2), 'minL', tolerance);
 };
 
 const isAntialiased = (
@@ -143,31 +155,20 @@ const analyseImages = (
 
     if (ignoreColors) {
       // ignoreColors
-      const pixel1L = getLightness(pixel1);
-      const pixel2L = getLightness(pixel2);
-      if (
-        isColorSimilar(pixel1.a, pixel2.a, 'a', tolerance) &&
-        isColorSimilar(pixel1L, pixel2L, 'minL', tolerance)
-      ) {
-        // ignoreColors && isLightnessSimilar
+      if (isGrayScaleSimilar(pixel1, pixel2, tolerance)) {
+        // ignoreColors && isGrayScaleSimilar
         setPixel(
           diffImageData,
           offset,
-          newGrayScalePixel(pixel2L, pixel2.a * pixelTransparency)
+          newGrayScalePixel(getLightness(pixel2), pixel2.a * pixelTransparency)
         );
       } else {
-        // ignoreColors && !isLightnessSimilar
+        // ignoreColors && !isGrayScaleSimilar
         // ? ignoreAntialiasing
         setPixel(diffImageData, offset, newErrorPixel(pixel1, pixel2));
         mismatchCount++;
       }
-    } else if (
-      // isColorSimilar
-      isColorSimilar(pixel1.r, pixel2.r, 'r', tolerance) &&
-      isColorSimilar(pixel1.g, pixel2.g, 'g', tolerance) &&
-      isColorSimilar(pixel1.b, pixel2.b, 'b', tolerance) &&
-      isColorSimilar(pixel1.a, pixel2.a, 'a', tolerance)
-    ) {
+    } else if (isColorSimilar(pixel1, pixel2, tolerance)) {
       // !ignoreColors && isColorSimilar
       setPixel(
         diffImageData,
@@ -182,21 +183,16 @@ const analyseImages = (
         (
           isAntialiased(pixel1, pixel1L, imageData1, y, x, width, tolerance) ||
           isAntialiased(pixel2, pixel2L, imageData2, y, x, width, tolerance)
-        )
-        &&
-        (
-          isColorSimilar(pixel1.a, pixel2.a, 'a', tolerance) &&
-          isColorSimilar(pixel1L, pixel2L, 'minL', tolerance)
-        )
+        ) && isGrayScaleSimilar(pixel1, pixel2, tolerance)
       ) {
-        // !ignoreColors && !isColorSimilar && ignoreAntialiasing && (isAntialiased && isLightnessSimilar)
+        // !ignoreColors && !isColorSimilar && ignoreAntialiasing && (isAntialiased && isGrayScaleSimilar)
         setPixel(
           diffImageData,
           offset,
           newGrayScalePixel(pixel2L, pixel2.a * pixelTransparency)
         );
       } else {
-        // !ignoreColors && !isColorSimilar && ignoreAntialiasing && !(isAntialiased && isLightnessSimilar)
+        // !ignoreColors && !isColorSimilar && ignoreAntialiasing && !(isAntialiased && isGrayScaleSimilar)
         setPixel(diffImageData, offset, newErrorPixel(pixel1, pixel2));
         mismatchCount++;
       }
