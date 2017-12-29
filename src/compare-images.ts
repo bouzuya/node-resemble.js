@@ -54,15 +54,6 @@ const isRGBASimilar = (p1: Pixel, p2: Pixel, tolerance: Tolerance): boolean => {
   return r && g && b && a;
 };
 
-const copyPixel = (
-  imageData: Buffer,
-  offset: number,
-  p1: Pixel,
-  pixelTransparency: number
-): void => {
-  setPixel(imageData, offset, newPixel(p1.r, p1.g, p1.b, p1.a * pixelTransparency));
-};
-
 const isAntialiased = (
   centerPixel: Pixel,
   centerL: number,
@@ -136,12 +127,7 @@ const analyseImages = (
     const offset = (y * width + x) * 4;
     if (skip) { // only skip if the image isn't small
       if (y % skip === 0 || x % skip === 0) {
-        copyPixel(diffImageData, offset, {
-          r: 0,
-          b: 0,
-          g: 0,
-          a: 0
-        }, pixelTransparency);
+        setPixel(diffImageData, offset, newPixel(0, 0, 0, 0));
         return;
       }
     }
@@ -158,8 +144,8 @@ const analyseImages = (
             diffImageData,
             offset,
             newGrayScalePixel(pixel2L, pixel2.a * pixelTransparency)
+            // newPixel(pixel1.r, pixel1.g, pixel1.b, pixel1.a * pixelTransparency)
           );
-          //copyPixel(targetPix, offset, pixel1, pixelTransparency);
           return;
         }
       }
@@ -182,7 +168,11 @@ const analyseImages = (
         mismatchCount++;
       }
     } else if (isRGBASimilar(pixel1, pixel2, tolerance)) {
-      copyPixel(diffImageData, offset, pixel1, pixelTransparency);
+      setPixel(
+        diffImageData,
+        offset,
+        newPixel(pixel1.r, pixel1.g, pixel1.b, pixel1.a * pixelTransparency)
+      );
     } else if (ignoreAntialiasing) {
       const pixel1L = getLightness(pixel1); // jit pixel info augmentation looks a little weird, sorry.
       const pixel2L = getLightness(pixel2);
