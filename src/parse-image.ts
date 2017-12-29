@@ -1,6 +1,6 @@
+import { getLightness } from './color';
 import { FileNameOrData } from './type/file-name-or-data';
 import { ParsedImage } from './type/parsed-image';
-import { getLightness } from './get-lightness';
 import { loadImage } from './image';
 
 const parseImage = (file: FileNameOrData): Promise<ParsedImage> => {
