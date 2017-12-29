@@ -142,57 +142,66 @@ const analyseImages = (
     }
 
     if (ignoreColors) {
+      // ignoreColors
       const pixel1L = getLightness(pixel1);
       const pixel2L = getLightness(pixel2);
       if (
         isColorSimilar(pixel1.a, pixel2.a, 'a', tolerance) &&
         isColorSimilar(pixel1L, pixel2L, 'minL', tolerance)
       ) {
+        // ignoreColors && isLightnessSimilar
         setPixel(
           diffImageData,
           offset,
           newGrayScalePixel(pixel2L, pixel2.a * pixelTransparency)
         );
       } else {
+        // ignoreColors && !isLightnessSimilar
+        // ? ignoreAntialiasing
         setPixel(diffImageData, offset, newErrorPixel(pixel1, pixel2));
         mismatchCount++;
       }
     } else if (
+      // isColorSimilar
       isColorSimilar(pixel1.r, pixel2.r, 'r', tolerance) &&
       isColorSimilar(pixel1.g, pixel2.g, 'g', tolerance) &&
       isColorSimilar(pixel1.b, pixel2.b, 'b', tolerance) &&
       isColorSimilar(pixel1.a, pixel2.a, 'a', tolerance)
     ) {
+      // !ignoreColors && isColorSimilar
       setPixel(
         diffImageData,
         offset,
         newPixel(pixel1.r, pixel1.g, pixel1.b, pixel1.a * pixelTransparency)
       );
     } else if (ignoreAntialiasing) {
+      // !ignoreColors && !isColorSimilar && ignoreAntialiasing
       const pixel1L = getLightness(pixel1); // jit pixel info augmentation looks a little weird, sorry.
       const pixel2L = getLightness(pixel2);
       if (
-        isAntialiased(pixel1, pixel1L, imageData1, y, x, width, tolerance) ||
-        isAntialiased(pixel2, pixel2L, imageData2, y, x, width, tolerance)
-      ) {
-        if (
+        (
+          isAntialiased(pixel1, pixel1L, imageData1, y, x, width, tolerance) ||
+          isAntialiased(pixel2, pixel2L, imageData2, y, x, width, tolerance)
+        )
+        &&
+        (
           isColorSimilar(pixel1.a, pixel2.a, 'a', tolerance) &&
           isColorSimilar(pixel1L, pixel2L, 'minL', tolerance)
-        ) {
-          setPixel(
-            diffImageData,
-            offset,
-            newGrayScalePixel(pixel2L, pixel2.a * pixelTransparency)
-          );
-        } else {
-          setPixel(diffImageData, offset, newErrorPixel(pixel1, pixel2));
-          mismatchCount++;
-        }
+        )
+      ) {
+        // !ignoreColors && !isColorSimilar && ignoreAntialiasing && (isAntialiased && isLightnessSimilar)
+        setPixel(
+          diffImageData,
+          offset,
+          newGrayScalePixel(pixel2L, pixel2.a * pixelTransparency)
+        );
       } else {
+        // !ignoreColors && !isColorSimilar && ignoreAntialiasing && !(isAntialiased && isLightnessSimilar)
         setPixel(diffImageData, offset, newErrorPixel(pixel1, pixel2));
         mismatchCount++;
       }
     } else {
+      // !ignoreColors && !isColorSimilar && !ignoreAntialiasing
       setPixel(diffImageData, offset, newErrorPixel(pixel1, pixel2));
       mismatchCount++;
     }
