@@ -60,6 +60,17 @@ const isSimilar = (p1: Pixel, p2: Pixel, options: CompareImagesOptions) => {
   }
 };
 
+const isInIgnoreRectangle = (
+  x: number,
+  y: number,
+  ignoreRectangles: Rectangle[] | null
+): boolean => {
+  return ignoreRectangles !== null &&
+    ignoreRectangles.some(([rx, ry, rw, rh]) => {
+      return (y >= ry) && (y < ry + rh) && (x >= rx) && (x < rx + rw);
+    });
+};
+
 const isAntialiased = (
   centerPixel: Pixel,
   imageData: Buffer,
@@ -115,7 +126,6 @@ const analyseImages = (
   const {
     errorPixelTransformer: newErrorPixel,
     ignoreAntialiasing,
-    ignoreRectangles,
     largeImageThreshold,
     tolerance,
     transparency
@@ -145,12 +155,7 @@ const analyseImages = (
     const pixel2 = getPixel(imageData2, offset);
     if (pixel1 === null || pixel2 === null) return;
 
-    if (
-      ignoreRectangles !== null &&
-      ignoreRectangles.some(([rx, ry, rw, rh]) => {
-        return (y >= ry) && (y < ry + rh) && (x >= rx) && (x < rx + rw);
-      })
-    ) {
+    if (isInIgnoreRectangle(x, y, options.ignoreRectangles)) {
       setPixel(
         diffImageData,
         offset,
