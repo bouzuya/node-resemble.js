@@ -39,13 +39,6 @@ const isColorSimilar = (
   return b1 === b2 || Math.abs(b1 - b2) < tolerance[color];
 };
 
-const isRGBSame = (p1: Pixel, p2: Pixel): boolean => {
-  const r = p1.r === p2.r;
-  const g = p1.g === p2.g;
-  const b = p1.b === p2.b;
-  return r && g && b;
-};
-
 const isRGBASimilar = (p1: Pixel, p2: Pixel, tolerance: Tolerance): boolean => {
   const r = isColorSimilar(p1.r, p2.r, 'r', tolerance);
   const g = isColorSimilar(p1.g, p2.g, 'g', tolerance);
@@ -80,7 +73,11 @@ const isAntialiased = (
       if (Math.abs(centerL - aroundL) > tolerance.maxL) {
         hasHighContrastSibling++;
       }
-      if (isRGBSame(centerPixel, aroundPixel)) {
+      if (
+        centerPixel.r === aroundPixel.r &&
+        centerPixel.g === aroundPixel.g &&
+        centerPixel.b === aroundPixel.b
+      ) {
         hasEquivilantSibling++;
       }
       if (Math.abs(aroundH - centerH) > 0.3) {
