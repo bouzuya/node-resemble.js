@@ -54,16 +54,6 @@ const isRGBASimilar = (p1: Pixel, p2: Pixel, tolerance: Tolerance): boolean => {
   return r && g && b && a;
 };
 
-const copyErrorPixel = (
-  imageData: Buffer,
-  offset: number,
-  p1: Pixel,
-  p2: Pixel,
-  errorPixelTransformer: (p1: Pixel, p2: Pixel) => Pixel
-): void => {
-  setPixel(imageData, offset, errorPixelTransformer(p1, p2));
-};
-
 const copyPixel = (
   imageData: Buffer,
   offset: number,
@@ -131,7 +121,7 @@ const analyseImages = (
   const width = Math.max(image1.width, image2.width);
   const height = Math.max(image1.height, image2.height);
   const {
-    errorPixelTransformer,
+    errorPixelTransformer: newErrorPixel,
     ignoreAntialiasing,
     ignoreColors,
     ignoreRectangles,
@@ -189,7 +179,7 @@ const analyseImages = (
       ) {
         copyGrayScalePixel(diffImageData, offset, pixel2.a, pixel2L, pixelTransparency);
       } else {
-        copyErrorPixel(diffImageData, offset, pixel1, pixel2, errorPixelTransformer);
+        setPixel(diffImageData, offset, newErrorPixel(pixel1, pixel2));
         mismatchCount++;
       }
     } else if (isRGBASimilar(pixel1, pixel2, tolerance)) {
@@ -207,15 +197,15 @@ const analyseImages = (
         ) {
           copyGrayScalePixel(diffImageData, offset, pixel2.a, pixel2L, pixelTransparency);
         } else {
-          copyErrorPixel(diffImageData, offset, pixel1, pixel2, errorPixelTransformer);
+          setPixel(diffImageData, offset, newErrorPixel(pixel1, pixel2));
           mismatchCount++;
         }
       } else {
-        copyErrorPixel(diffImageData, offset, pixel1, pixel2, errorPixelTransformer);
+        setPixel(diffImageData, offset, newErrorPixel(pixel1, pixel2));
         mismatchCount++;
       }
     } else {
-      copyErrorPixel(diffImageData, offset, pixel1, pixel2, errorPixelTransformer);
+      setPixel(diffImageData, offset, newErrorPixel(pixel1, pixel2));
       mismatchCount++;
     }
   });
