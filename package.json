@@ -14,8 +14,11 @@
     "@types/jpeg-js": "^0.3.0",
     "@types/pngjs": "^3.3.0",
     "beater": "^5.0.1",
+    "npm-run-all": "^4.1.2",
+    "rimraf": "^2.6.2",
     "tap-dot-b": "^0.1.0",
-    "typescript": "^2.6.2"
+    "typescript": "^2.6.2",
+    "watch": "^1.0.2"
   },
   "homepage": "https://github.com/lksv/node-resemble.js",
   "keywords": [
@@ -31,6 +34,12 @@
     "url": "https://github.com/lksv/node-resemble.js.git"
   },
   "scripts": {
-    "test": "node .tmp/test/index.js | tap-dot-b"
+    "build": "tsc",
+    "clean": "rimraf .tmp",
+    "prepublish": "npm-run-all -s \"clean\" \"build\"",
+    "test": "node .tmp/test/index.js | tap-dot-b",
+    "watch": "npm-run-all -p \"watch:build\" \"watch:test\"",
+    "watch:build": "npm run build -- --watch",
+    "watch:test": "watch \"npm run test\" .tmp --wait 1"
   }
 }
