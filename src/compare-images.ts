@@ -148,6 +148,7 @@ const analyseImages = (
     const offset = (y * width + x) * 4;
     if (skip !== null) { // only skip if the image isn't small
       if (y % skip === 0 || x % skip === 0) {
+        // ? skip
         setPixel(diffImageData, offset, newPixel(0, 0, 0, 0));
         return;
       }
@@ -163,6 +164,7 @@ const analyseImages = (
         offset,
         newGrayScalePixel(getLightness(pixel2), pixel2.a * transparency)
         // newPixel(pixel1.r, pixel1.g, pixel1.b, pixel1.a * pixelTransparency)
+        // ? diffOnly
       );
       return;
     }
@@ -175,6 +177,7 @@ const analyseImages = (
           ? newGrayScalePixel(getLightness(pixel2), pixel2.a * transparency)
           : newPixel(pixel1.r, pixel1.g, pixel1.b, pixel1.a * transparency)
       );
+      // ? diffOnly
     } else if (
       !options.ignoreColors && // ?
       ignoreAntialiasing &&
@@ -189,6 +192,7 @@ const analyseImages = (
         offset,
         newGrayScalePixel(getLightness(pixel2), pixel2.a * transparency)
       );
+      // ? diffOnly
     } else {
       setPixel(diffImageData, offset, newErrorPixel(pixel1, pixel2));
       misMatchPixelCount++;
