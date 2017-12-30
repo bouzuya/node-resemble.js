@@ -12,8 +12,10 @@ export interface ResembleOptions {
   errorType?: ErrorPixelTransformerType;
   largeImageThreshold?: number;
   transparency?: number;
+  ignoreAlpha?: boolean;
   ignoreAntialiasing?: boolean;
   ignoreColors?: boolean;
+  ignoreLess?: boolean;
   ignoreNothing?: boolean;
   ignoreRectangles?: Rectangle[];
 }

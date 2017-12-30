@@ -1,9 +1,11 @@
 import { getHue, getLightness } from './color';
 import { newTransformer } from './error-pixel-transformer';
+import { newTolerance } from './tolerance';
 import { U8 } from './type/u8';
 import { CompareImagesOptions } from './type/compare-images-options';
 import { CompareResult } from './type/compare-result';
 import { FileNameOrData } from './type/file-name-or-data';
+import { IgnoreType } from './type/ignore-type';
 import { Image } from './type/image';
 import { Pixel } from './type/pixel';
 import { Rectangle } from './type/rectangle';
@@ -249,49 +251,19 @@ const parseOptions = (options?: ResembleOptions): CompareImagesOptions => {
   const largeImageThreshold = typeof opts.largeImageThreshold !== 'undefined'
     ? opts.largeImageThreshold
     : 1200;
-  const ignoreType: 'antialiasing' | 'colors' | 'nothing' | 'default' =
-    typeof opts.ignoreAntialiasing !== 'undefined' && opts.ignoreAntialiasing
-      ? 'antialiasing'
-      : typeof opts.ignoreColors !== 'undefined' && opts.ignoreColors
-        ? 'colors'
-        : typeof opts.ignoreNothing !== 'undefined' && opts.ignoreNothing
-          ? 'nothing'
-          : 'default';
-  const tolerance: Tolerance = ignoreType === 'antialiasing'
-    ? {
-      r: 32,
-      g: 32,
-      b: 32,
-      a: 32,
-      minL: 64,
-      maxL: 96
-    }
-    : ignoreType === 'colors'
-      ? {
-        r: 16, // unused -> default
-        g: 16, // unused -> default
-        b: 16, // unused -> default
-        a: 16,
-        minL: 16,
-        maxL: 240
-      }
-      : ignoreType === 'nothing'
-        ? {
-          r: 0,
-          g: 0,
-          b: 0,
-          a: 0,
-          minL: 0,
-          maxL: 255
-        }
-        : {
-          r: 16,
-          g: 16,
-          b: 16,
-          a: 16,
-          minL: 16,
-          maxL: 240
-        };
+  const ignoreType: IgnoreType =
+    typeof opts.ignoreAlpha !== 'undefined' && opts.ignoreAlpha
+      ? 'alpha'
+      : typeof opts.ignoreAntialiasing !== 'undefined' && opts.ignoreAntialiasing
+        ? 'antialiasing'
+        : typeof opts.ignoreColors !== 'undefined' && opts.ignoreColors
+          ? 'colors'
+          : typeof opts.ignoreLess !== 'undefined' && opts.ignoreLess
+            ? 'less'
+            : typeof opts.ignoreNothing !== 'undefined' && opts.ignoreNothing
+              ? 'nothing'
+              : 'default';
+  const tolerance: Tolerance = newTolerance(ignoreType);
   const ignoreAntialiasing = ignoreType === 'antialiasing';
   const ignoreColors = ignoreType === 'colors';
   const ignoreRectangles: Rectangle[] | null =
