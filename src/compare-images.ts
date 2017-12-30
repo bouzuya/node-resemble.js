@@ -158,7 +158,7 @@ const compareImages = (
       setPixel(
         diffImage,
         offset,
-        newGrayScalePixel(getLightness(pixel2), pixel2.a * transparency)
+        newGrayScalePixel(0, pixel2.a * transparency)
         // newPixel(pixel1.r, pixel1.g, pixel1.b, pixel1.a * pixelTransparency)
         // ? diffOnly
       );
