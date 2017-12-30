@@ -4,7 +4,6 @@ import { U8 } from './type/u8';
 import { CompareImagesOptions } from './type/compare-images-options';
 import { CompareImagesOptionsImpl } from './type/compare-images-options-impl';
 import { CompareImagesResult } from './type/compare-images-result';
-import { FileNameOrData } from './type/file-name-or-data';
 import { Image } from './type/image';
 import { Pixel } from './type/pixel';
 import { Rectangle } from './type/rectangle';
@@ -13,7 +12,6 @@ import {
   convertToJPG,
   convertToPNG,
   getPixel,
-  loadImage,
   newImageBasedOn,
   newPixel,
   setPixel
@@ -116,11 +114,12 @@ const isAntialiased = (
   return hasEquivilantSibling < 2;
 };
 
-const analyseImages = (
+const compareImages = (
   image1: Image,
   image2: Image,
-  options: CompareImagesOptionsImpl
+  options?: CompareImagesOptions
 ): CompareImagesResult => {
+  const opts = parseCompareImagesOptions(options);
   const newGrayScalePixel = (l: number, a: U8): Pixel => newPixel(l, l, l, a);
   const startTime = Date.now();
   const width = Math.max(image1.width, image2.width);
@@ -131,7 +130,7 @@ const analyseImages = (
     largeImageThreshold,
     tolerance,
     transparency
-  } = options;
+  } = opts;
   const diffImage = newImageBasedOn(image1); // TODO
   const skip: number | null =
     !!largeImageThreshold &&
@@ -155,7 +154,7 @@ const analyseImages = (
     const pixel2 = getPixel(image2, offset);
     if (pixel1 === null || pixel2 === null) return;
 
-    if (isInIgnoreRectangle(x, y, options.ignoreRectangles)) {
+    if (isInIgnoreRectangle(x, y, opts.ignoreRectangles)) {
       setPixel(
         diffImage,
         offset,
@@ -166,17 +165,17 @@ const analyseImages = (
       return;
     }
 
-    if (isSimilar(pixel1, pixel2, options)) {
+    if (isSimilar(pixel1, pixel2, opts)) {
       setPixel(
         diffImage,
         offset,
-        options.ignoreColors
+        opts.ignoreColors
           ? newGrayScalePixel(getLightness(pixel2), pixel2.a * transparency)
           : newPixel(pixel1.r, pixel1.g, pixel1.b, pixel1.a * transparency)
       );
       // ? diffOnly
     } else if (
-      !options.ignoreColors && // ?
+      !opts.ignoreColors && // ?
       ignoreAntialiasing &&
       (
         isAntialiased(pixel1, image1, y, x, width, tolerance) ||
@@ -216,19 +215,6 @@ const analyseImages = (
       return convertToJPG(diffImage, quality);
     }
   };
-};
-
-const compareImages = (
-  file1: FileNameOrData,
-  file2: FileNameOrData,
-  options?: CompareImagesOptions
-): Promise<CompareImagesResult> => {
-  return Promise
-    .all([loadImage(file1), loadImage(file2)])
-    .then(([image1, image2]: [Image, Image]) => {
-      //lksv: normalization removed
-      return analyseImages(image1, image2, parseCompareImagesOptions(options));
-    });
 };
 
 export { compareImages };
