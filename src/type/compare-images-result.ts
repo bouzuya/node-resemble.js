@@ -4,7 +4,7 @@ export interface CompareImagesResult {
   rawMisMatchPercentage: number;
   misMatchPercentage: string;
   analysisTime: number;
-  getDiffImage: (_text: any) => png.PNG;
+  getDiffImage: (_text?: any) => png.PNG;
   getDiffImageAsJPEG: (quality?: number) => Buffer;
   isSameDimensions: boolean;
   dimensionDifference: {
