@@ -2,18 +2,18 @@ import { newTransformer } from './error-pixel-transformer';
 import { newTolerance } from './tolerance';
 import { U8 } from './type/u8';
 import { CompareImagesOptions } from './type/compare-images-options';
+import { CompareImagesOptionsImpl } from './type/compare-images-options-impl';
 import { IgnoreType } from './type/ignore-type';
 import { Pixel } from './type/pixel';
 import { Rectangle } from './type/rectangle';
-import { ResembleOptions } from './type/resemble-options';
 import { Tolerance } from './type/tolerance';
 
 const parseCompareImagesOptions = (
-  options?: ResembleOptions
-): CompareImagesOptions => {
+  options?: CompareImagesOptions
+): CompareImagesOptionsImpl => {
   const opts = options || {};
   const getColorValue = (
-    color: ResembleOptions['errorColor'],
+    color: CompareImagesOptions['errorColor'],
     key: 'red' | 'green' | 'blue' | 'alpha',
     defaultValue: U8
   ): U8 => {

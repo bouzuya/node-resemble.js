@@ -2,12 +2,12 @@ import { getHue, getLightness } from './color';
 import { parseCompareImagesOptions } from './compare-images-options';
 import { U8 } from './type/u8';
 import { CompareImagesOptions } from './type/compare-images-options';
-import { CompareResult } from './type/compare-result';
+import { CompareImagesOptionsImpl } from './type/compare-images-options-impl';
+import { CompareImagesResult } from './type/compare-images-result';
 import { FileNameOrData } from './type/file-name-or-data';
 import { Image } from './type/image';
 import { Pixel } from './type/pixel';
 import { Rectangle } from './type/rectangle';
-import { ResembleOptions } from './type/resemble-options';
 import { Tolerance } from './type/tolerance';
 import {
   convertToJPG,
@@ -52,7 +52,7 @@ const isGrayScaleSimilar = (p1: Pixel, p2: Pixel, tolerance: Tolerance) => {
     isValueSameOrSimilar(getLightness(p1), getLightness(p2), 'minL', tolerance);
 };
 
-const isSimilar = (p1: Pixel, p2: Pixel, options: CompareImagesOptions) => {
+const isSimilar = (p1: Pixel, p2: Pixel, options: CompareImagesOptionsImpl) => {
   const { ignoreColors, tolerance } = options;
   if (ignoreColors) {
     return isGrayScaleSimilar(p1, p2, tolerance);
@@ -119,8 +119,8 @@ const isAntialiased = (
 const analyseImages = (
   image1: Image,
   image2: Image,
-  options: CompareImagesOptions
-): CompareResult => {
+  options: CompareImagesOptionsImpl
+): CompareImagesResult => {
   const newGrayScalePixel = (l: number, a: U8): Pixel => newPixel(l, l, l, a);
   const startTime = Date.now();
   const width = Math.max(image1.width, image2.width);
@@ -224,8 +224,8 @@ const analyseImages = (
 const compareImages = (
   file1: FileNameOrData,
   file2: FileNameOrData,
-  options?: ResembleOptions
-): Promise<CompareResult> => {
+  options?: CompareImagesOptions
+): Promise<CompareImagesResult> => {
   return Promise
     .all([loadImage(file1), loadImage(file2)])
     .then(([image1, image2]: [Image, Image]) => {

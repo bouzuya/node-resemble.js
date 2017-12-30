@@ -1,13 +1,21 @@
-import { Pixel } from './pixel';
 import { Rectangle } from './rectangle';
-import { Tolerance } from './tolerance';
+import { U8 } from './u8';
+import { ErrorPixelTransformerType } from './error-pixel-transformer-type';
 
 export interface CompareImagesOptions {
-  errorPixelTransformer: (p1: Pixel, p2: Pixel) => Pixel;
-  ignoreAntialiasing: boolean;
-  ignoreColors: boolean;
-  ignoreRectangles: Rectangle[] | null;
-  largeImageThreshold: number;
-  tolerance: Tolerance;
-  transparency: number;
+  errorColor?: Partial<{
+    red: U8;
+    green: U8;
+    blue: U8;
+    alpha: U8;
+  }>;
+  errorType?: ErrorPixelTransformerType;
+  largeImageThreshold?: number;
+  transparency?: number;
+  ignoreAlpha?: boolean;
+  ignoreAntialiasing?: boolean;
+  ignoreColors?: boolean;
+  ignoreLess?: boolean;
+  ignoreNothing?: boolean;
+  ignoreRectangles?: Rectangle[];
 }
