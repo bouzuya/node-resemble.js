@@ -1,10 +1,14 @@
 {
-  "name": "node-resemble-js",
-  "description": "Image analysis and comparison for nodejs",
-  "version": "0.2.0",
-  "author": "Lukas Svoboda <lukas.svoboda@gmail.com>",
+  "name": "@bouzuya/resemble",
+  "description": "Image analysis and comparison for Node.js using TypeScript",
+  "version": "0.0.0",
+  "author": {
+    "email": "m@bouzuya.net",
+    "name": "bouzuya",
+    "url": "http://bouzuya.net/"
+  },
   "bugs": {
-    "url": "https://github.com/lksv/node-resemble.js/issues"
+    "url": "https://github.com/bouzuya/resemble/issues"
   },
   "dependencies": {
     "jpeg-js": "0.2.0",
@@ -20,7 +24,7 @@
     "typescript": "^2.6.2",
     "watch": "^1.0.2"
   },
-  "homepage": "https://github.com/lksv/node-resemble.js",
+  "homepage": "https://github.com/bouzuya/resemble",
   "keywords": [
     "compare",
     "comparison",
@@ -31,7 +35,7 @@
   "main": "resemble.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/lksv/node-resemble.js.git"
+    "url": "https://github.com/bouzuya/resemble.git"
   },
   "scripts": {
     "build": "tsc",
