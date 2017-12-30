@@ -1,4 +1,5 @@
 import { getHue, getLightness } from './color';
+import { newTransformer } from './error-pixel-transformer';
 import { U8 } from './type/u8';
 import { CompareImagesOptions } from './type/compare-images-options';
 import { CompareResult } from './type/compare-result';
@@ -234,28 +235,10 @@ const parseOptions = (options?: ResembleOptions): CompareImagesOptions => {
     b: getColorValue(opts.errorColor, 'blue', 255),
     a: getColorValue(opts.errorColor, 'alpha', 255)
   };
-  const errorPixelTransform = {
-    flat: function (_p1: Pixel, _p2: Pixel): Pixel {
-      return {
-        r: errorPixelColor.r,
-        g: errorPixelColor.g,
-        b: errorPixelColor.b,
-        a: errorPixelColor.a
-      }
-    },
-    movement: function (_p1: Pixel, p2: Pixel): Pixel {
-      return {
-        r: ((p2.r * (errorPixelColor.r / 255)) + errorPixelColor.r) / 2,
-        g: ((p2.g * (errorPixelColor.g / 255)) + errorPixelColor.g) / 2,
-        b: ((p2.b * (errorPixelColor.b / 255)) + errorPixelColor.b) / 2,
-        a: p2.a
-      }
-    }
-  };
-  const errorPixelTransformer =
-    typeof opts.errorType !== 'undefined' && typeof errorPixelTransform[opts.errorType] !== 'undefined'
-      ? errorPixelTransform[opts.errorType]
-      : errorPixelTransform.flat;
+  const errorPixelTransformer = newTransformer(
+    errorPixelColor,
+    typeof opts.errorType !== 'undefined' ? opts.errorType : 'flat'
+  );
   const transparency = typeof opts.transparency !== 'undefined'
     ? opts.transparency
     : 1;
