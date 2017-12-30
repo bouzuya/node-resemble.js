@@ -43,10 +43,10 @@
   },
   "scripts": {
     "build": "npm-run-all -s \"build:ts\" \"build:lib\"",
-    "build:lib": "cpx \".tmp/src/*\" \"lib\"",
+    "build:lib": "cpx \".tmp/src/**/*.{ts,js}\" \"lib\"",
     "build:ts": "tsc",
     "clean": "rimraf .tmp",
-    "prepublish": "npm-run-all -s \"clean\" \"build\"",
+    "prepare": "npm-run-all -s \"clean\" \"build\"",
     "test": "node .tmp/test/index.js | tap-dot-b",
     "watch": "npm-run-all -p \"watch:build\" \"watch:test\"",
     "watch:build": "npm run build -- --watch",
