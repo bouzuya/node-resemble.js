@@ -18,12 +18,16 @@
     "@types/jpeg-js": "^0.3.0",
     "@types/pngjs": "^3.3.0",
     "beater": "^5.0.1",
+    "cpx": "^1.5.0",
     "npm-run-all": "^4.1.2",
     "rimraf": "^2.6.2",
     "tap-dot-b": "^0.1.0",
     "typescript": "^2.6.2",
     "watch": "^1.0.2"
   },
+  "files": [
+    "lib"
+  ],
   "homepage": "https://github.com/bouzuya/resemble",
   "keywords": [
     "compare",
@@ -32,13 +36,15 @@
     "image"
   ],
   "license": "MIT",
-  "main": "resemble.js",
+  "main": "lib/index.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/bouzuya/resemble.git"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "npm-run-all -s \"build:ts\" \"build:lib\"",
+    "build:lib": "cpx \".tmp/src/*\" \"lib\"",
+    "build:ts": "tsc",
     "clean": "rimraf .tmp",
     "prepublish": "npm-run-all -s \"clean\" \"build\"",
     "test": "node .tmp/test/index.js | tap-dot-b",
