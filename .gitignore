@@ -3,3 +3,5 @@
 
 # NPM Packages
 /node_modules
+
+.tmp/
