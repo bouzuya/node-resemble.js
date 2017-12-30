@@ -1,30 +1,14 @@
 {
   "name": "node-resemble-js",
-  "version": "0.2.0",
   "description": "Image analysis and comparison for nodejs",
-  "main": "resemble.js",
-  "scripts": {
-    "test": "node .tmp/test/index.js | tap-dot-b"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/lksv/node-resemble.js.git"
-  },
-  "keywords": [
-    "comparison",
-    "image",
-    "diff",
-    "compare"
-  ],
+  "version": "0.2.0",
   "author": "Lukas Svoboda <lukas.svoboda@gmail.com>",
-  "license": "MIT",
   "bugs": {
     "url": "https://github.com/lksv/node-resemble.js/issues"
   },
-  "homepage": "https://github.com/lksv/node-resemble.js",
   "dependencies": {
-    "pngjs": "~2.2.0",
-    "jpeg-js": "0.2.0"
+    "jpeg-js": "0.2.0",
+    "pngjs": "~2.2.0"
   },
   "devDependencies": {
     "@types/jpeg-js": "^0.3.0",
@@ -32,5 +16,21 @@
     "beater": "^5.0.1",
     "tap-dot-b": "^0.1.0",
     "typescript": "^2.6.2"
+  },
+  "homepage": "https://github.com/lksv/node-resemble.js",
+  "keywords": [
+    "compare",
+    "comparison",
+    "diff",
+    "image"
+  ],
+  "license": "MIT",
+  "main": "resemble.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lksv/node-resemble.js.git"
+  },
+  "scripts": {
+    "test": "node .tmp/test/index.js | tap-dot-b"
   }
 }
