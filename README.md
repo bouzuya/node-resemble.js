@@ -14,6 +14,7 @@ Retrieve basic analysis on image.
 ```javascript
 import { loadImage, parseImage } from '@bouzuya/resemble';
 
+const filePath = /* ... */;
 loadImage(filePath)
   .then((image) => {
     const data = parseImage(image);
