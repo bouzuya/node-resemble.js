@@ -1,9 +1,11 @@
 import { compareImages } from './compare-images';
-import { loadImage } from './image';
+import { loadImage, saveImageAsJPG, saveImageAsPNG } from './image';
 import { parseImage } from './parse-image';
 
 export {
   compareImages,
   loadImage,
-  parseImage
+  parseImage,
+  saveImageAsJPG,
+  saveImageAsPNG
 };

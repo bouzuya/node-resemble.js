@@ -1,6 +1,5 @@
 import * as assert from 'assert';
 import { Test, run, test } from 'beater';
-import png = require('pngjs');
 import { compareImages, loadImage } from '../src';
 import { Image } from '../src/type/image';
 
@@ -12,7 +11,7 @@ var EXAMPLE_PEOPLE_IMAGES = [
 ];
 var OPTIMISATION_SKIP_STEP = 6;
 
-function expectPixelsToBeSkipped(image: png.PNG, step: number) {
+function expectPixelsToBeSkipped(image: Image, step: number) {
   assert(getPixelForLocation(image, 1, step - 1).alpha !== 0);
   assert(getPixelForLocation(image, 1, step).alpha === 0);
   assert(getPixelForLocation(image, 1, step + 1).alpha !== 0);
@@ -24,7 +23,7 @@ function expectPixelsToBeSkipped(image: png.PNG, step: number) {
   assert(getPixelForLocation(image, step, step).alpha === 0);
 }
 
-function expectPixelsNotToBeSkipped(image: png.PNG, step: number) {
+function expectPixelsNotToBeSkipped(image: Image, step: number) {
   assert(getPixelForLocation(image, 1, step).alpha !== 0);
   assert(getPixelForLocation(image, step, 1).alpha !== 0);
   assert(getPixelForLocation(image, step, step).alpha !== 0);

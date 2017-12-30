@@ -16,7 +16,12 @@ const convertToJPG = (image: Image, quality?: number): Buffer => {
 };
 
 const convertToPNG = (image: Image): png.PNG => {
-  return image as png.PNG; // downcast
+  const p: png.PNG = new png.PNG({
+    width: image.width,
+    height: image.height,
+  });
+  p.data = new Buffer(image.data);
+  return p;
 };
 
 const getPixel = (image: Image, offset: number): Pixel | null => {
@@ -65,6 +70,15 @@ const loadImage = (file: FileNameOrData): Promise<Image> => {
   });
 };
 
+const newImage = (dimension: { width: number; height: number; }): Image => {
+  const { width, height } = dimension;
+  return {
+    data: new Buffer(4 * height * width),
+    height,
+    width
+  };
+};
+
 const newImageBasedOn = (image: Image): Image => {
   return new png.PNG({
     width: image.width,
@@ -77,6 +91,30 @@ const newImageBasedOn = (image: Image): Image => {
 
 const newPixel = (r: U8, g: U8, b: U8, a: U8): Pixel => {
   return { r, g, b, a };
+};
+
+const saveImageAsJPG = (
+  fileName: string,
+  image: Image,
+  options?: { quality?: number; }
+): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    const data = convertToJPG(image, (options || {}).quality);
+    fs.writeFile(fileName, data, (error) => error ? resolve() : reject(error));
+  });
+};
+
+const saveImageAsPNG = (
+  fileName: string,
+  image: Image,
+  _options?: {}
+): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    const data = convertToPNG(image);
+    const ws = fs.createWriteStream(fileName);
+    ws.once('finish', () => resolve()).once('error', (error) => reject(error));
+    data.pack().pipe(ws);
+  });
 };
 
 const setPixel = (image: Image, offset: number, p: Pixel): void => {
@@ -93,7 +131,10 @@ export {
   convertToPNG,
   getPixel,
   loadImage,
+  newImage,
   newImageBasedOn,
   newPixel,
+  saveImageAsJPG,
+  saveImageAsPNG,
   setPixel
 };

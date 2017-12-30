@@ -1,4 +1,9 @@
-const { compareImages, loadImage } = require('../.tmp/src'); // @bouzuya/resemble
+const {
+  compareImages,
+  loadImage,
+  saveImageAsJPG,
+  saveImageAsPNG
+} = require('../.tmp/src'); // @bouzuya/resemble
 const fs = require('fs');
 
 const options = {
@@ -16,7 +21,7 @@ Promise
   .then(([image1, image2]) => {
     const data = compareImages(image1, image2, options);
     console.log(data);
-    data.getDiffImage().pack().pipe(fs.createWriteStream('diff.png'));
+    saveImageAsPNG('diff.png', data.getDiffImage());
   });
 
 // jpeg comparison
@@ -25,7 +30,7 @@ Promise
   .then(([image1, image2]) => {
     const data = compareImages(image1, image2, options);
     console.log(data);
-    data.getDiffImage().pack().pipe(fs.createWriteStream('diffjpg.png'));
+    saveImageAsPNG('diffjpg.png', data.getDiffImage());
   });
 
 // jpeg comparison
@@ -34,7 +39,7 @@ Promise
   .then(([image1, image2]) => {
     const data = compareImages(image1, image2, options);
     console.log(data);
-    fs.writeFileSync('diffjpg.jpg', data.getDiffImageAsJPEG());
+    saveImageAsJPG('diffjpg.jpg', data.getDiffImage());
   });
 
 const fileData1 = fs.readFileSync('People.png');
@@ -46,5 +51,5 @@ Promise
       ignoreRectangles: [[325, 170, 100, 40]]
     }));
     console.log('with ignore rectangle:', data);
-    data.getDiffImage().pack().pipe(fs.createWriteStream('diffr.png'));
+    saveImageAsPNG('diffr.png', data.getDiffImage());
   });

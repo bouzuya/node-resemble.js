@@ -1,11 +1,10 @@
-import png = require('pngjs');
+import { Image } from './image';
 
 export interface CompareImagesResult {
   rawMisMatchPercentage: number;
   misMatchPercentage: string;
   analysisTime: number;
-  getDiffImage: (_text?: any) => png.PNG;
-  getDiffImageAsJPEG: (quality?: number) => Buffer;
+  getDiffImage: () => Image;
   isSameDimensions: boolean;
   dimensionDifference: {
     width: number;

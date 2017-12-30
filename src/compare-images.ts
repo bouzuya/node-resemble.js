@@ -8,14 +8,7 @@ import { Image } from './type/image';
 import { Pixel } from './type/pixel';
 import { Rectangle } from './type/rectangle';
 import { Tolerance } from './type/tolerance';
-import {
-  convertToJPG,
-  convertToPNG,
-  getPixel,
-  newImageBasedOn,
-  newPixel,
-  setPixel
-} from './image';
+import { getPixel, newImage, newPixel, setPixel } from './image';
 
 const loop = (
   height: number,
@@ -131,7 +124,7 @@ const compareImages = (
     tolerance,
     transparency
   } = opts;
-  const diffImage = newImageBasedOn(image1); // TODO
+  const diffImage = newImage(image1); // TODO
   const skip: number | null =
     !!largeImageThreshold &&
       ignoreAntialiasing &&
@@ -208,11 +201,8 @@ const compareImages = (
     rawMisMatchPercentage,
     misMatchPercentage: rawMisMatchPercentage.toFixed(2),
     analysisTime: endTime - startTime,
-    getDiffImage: function (_text) {
-      return convertToPNG(diffImage);
-    },
-    getDiffImageAsJPEG: function (quality) {
-      return convertToJPG(diffImage, quality);
+    getDiffImage(): Image {
+      return diffImage;
     }
   };
 };
