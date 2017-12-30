@@ -19,14 +19,15 @@ const convertToPNG = (image: Image): png.PNG => {
   return image as png.PNG; // downcast
 };
 
-const getPixel = (imageData: Buffer, offset: number): Pixel | null => {
-  const r = imageData[offset];
+const getPixel = (image: Image, offset: number): Pixel | null => {
+  const d = image.data;
+  const r = d[offset];
   if (typeof r === 'undefined') return null;
   return {
     r: r,
-    g: imageData[offset + 1],
-    b: imageData[offset + 2],
-    a: imageData[offset + 3]
+    g: d[offset + 1],
+    b: d[offset + 2],
+    a: d[offset + 3]
   };
 };
 
@@ -78,11 +79,13 @@ const newPixel = (r: U8, g: U8, b: U8, a: U8): Pixel => {
   return { r, g, b, a };
 };
 
-const setPixel = (imageData: Buffer, offset: number, p: Pixel): void => {
-  imageData[offset] = p.r;
-  imageData[offset + 1] = p.g;
-  imageData[offset + 2] = p.b;
-  imageData[offset + 3] = p.a;
+const setPixel = (image: Image, offset: number, p: Pixel): void => {
+  // ? range check
+  const d = image.data;
+  d[offset] = p.r;
+  d[offset + 1] = p.g;
+  d[offset + 2] = p.b;
+  d[offset + 3] = p.a;
 };
 
 export {

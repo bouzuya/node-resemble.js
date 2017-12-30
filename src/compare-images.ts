@@ -74,7 +74,7 @@ const isInIgnoreRectangle = (
 
 const isAntialiased = (
   centerPixel: Pixel,
-  imageData: Buffer,
+  image: Image,
   y: number,
   x: number,
   width: number,
@@ -90,7 +90,7 @@ const isAntialiased = (
     for (let j = distance * -1; j <= distance; j++) {
       if (i === 0 && j === 0) continue; // ignore source pixel
       const offset = ((y + j) * width + (x + i)) * 4;
-      const aroundPixel = getPixel(imageData, offset);
+      const aroundPixel = getPixel(image, offset);
       if (aroundPixel === null) continue;
       const aroundL = getLightness(aroundPixel);
       const aroundH = getHue(aroundPixel);
@@ -132,10 +132,7 @@ const analyseImages = (
     tolerance,
     transparency
   } = options;
-  const imageData1 = image1.data;
-  const imageData2 = image2.data;
   const diffImage = newImageBasedOn(image1); // TODO
-  const diffImageData = diffImage.data;
   const skip: number | null =
     !!largeImageThreshold &&
       ignoreAntialiasing &&
@@ -149,18 +146,18 @@ const analyseImages = (
     if (skip !== null) { // only skip if the image isn't small
       if (y % skip === 0 || x % skip === 0) {
         // ? skip
-        setPixel(diffImageData, offset, newPixel(0, 0, 0, 0));
+        setPixel(diffImage, offset, newPixel(0, 0, 0, 0));
         return;
       }
     }
 
-    const pixel1 = getPixel(imageData1, offset);
-    const pixel2 = getPixel(imageData2, offset);
+    const pixel1 = getPixel(image1, offset);
+    const pixel2 = getPixel(image2, offset);
     if (pixel1 === null || pixel2 === null) return;
 
     if (isInIgnoreRectangle(x, y, options.ignoreRectangles)) {
       setPixel(
-        diffImageData,
+        diffImage,
         offset,
         newGrayScalePixel(getLightness(pixel2), pixel2.a * transparency)
         // newPixel(pixel1.r, pixel1.g, pixel1.b, pixel1.a * pixelTransparency)
@@ -171,7 +168,7 @@ const analyseImages = (
 
     if (isSimilar(pixel1, pixel2, options)) {
       setPixel(
-        diffImageData,
+        diffImage,
         offset,
         options.ignoreColors
           ? newGrayScalePixel(getLightness(pixel2), pixel2.a * transparency)
@@ -182,19 +179,19 @@ const analyseImages = (
       !options.ignoreColors && // ?
       ignoreAntialiasing &&
       (
-        isAntialiased(pixel1, imageData1, y, x, width, tolerance) ||
-        isAntialiased(pixel2, imageData2, y, x, width, tolerance)
+        isAntialiased(pixel1, image1, y, x, width, tolerance) ||
+        isAntialiased(pixel2, image2, y, x, width, tolerance)
       ) &&
       isGrayScaleSimilar(pixel1, pixel2, tolerance)
     ) {
       setPixel(
-        diffImageData,
+        diffImage,
         offset,
         newGrayScalePixel(getLightness(pixel2), pixel2.a * transparency)
       );
       // ? diffOnly
     } else {
-      setPixel(diffImageData, offset, newErrorPixel(pixel1, pixel2));
+      setPixel(diffImage, offset, newErrorPixel(pixel1, pixel2));
       misMatchPixelCount++;
     }
   });

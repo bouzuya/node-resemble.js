@@ -4,7 +4,8 @@ import { ParsedImage } from './type/parsed-image';
 import { getPixel, loadImage } from './image';
 
 const parseImage = (file: FileNameOrData): Promise<ParsedImage> => {
-  return loadImage(file).then(({ data, width, height }) => {
+  return loadImage(file).then((image) => {
+    const { width, height } = image;
     let pixelCount = 0;
     let rTotal = 0;
     let gTotal = 0;
@@ -14,7 +15,7 @@ const parseImage = (file: FileNameOrData): Promise<ParsedImage> => {
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         let offset = (y * width + x) * 4;
-        const p = getPixel(data, offset);
+        const p = getPixel(image, offset);
         if (p === null) throw new Error();
         const { r, g, b } = p;
         let l = getLightness({ r, g, b });
