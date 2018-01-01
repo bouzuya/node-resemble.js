@@ -1,4 +1,4 @@
-import { getHue, getLightness } from './color';
+import { getHue, getLuma } from './color';
 import { parseCompareImagesOptions } from './compare-images-options';
 import { U8 } from './type/u8';
 import { CompareImagesOptions } from './type/compare-images-options';
@@ -40,7 +40,7 @@ const isColorSimilar = (p1: Pixel, p2: Pixel, tolerance: Tolerance) => {
 
 const isGrayScaleSimilar = (p1: Pixel, p2: Pixel, tolerance: Tolerance) => {
   return isValueSameOrSimilar(p1.a, p2.a, 'a', tolerance) &&
-    isValueSameOrSimilar(getLightness(p1), getLightness(p2), 'minL', tolerance);
+    isValueSameOrSimilar(getLuma(p1), getLuma(p2), 'minL', tolerance);
 };
 
 const isSimilar = (p1: Pixel, p2: Pixel, options: CompareImagesOptionsImpl) => {
@@ -76,14 +76,14 @@ const isAntialiased = (
   let hasEquivilantSibling = 0;
   const distance = 1;
   const centerH = getHue(centerPixel);
-  const centerL = getLightness(centerPixel);
+  const centerL = getLuma(centerPixel);
   for (let i = distance * -1; i <= distance; i++) {
     for (let j = distance * -1; j <= distance; j++) {
       if (i === 0 && j === 0) continue; // ignore source pixel
       const offset = ((y + j) * width + (x + i)) * 4;
       const aroundPixel = getPixel(image, offset);
       if (aroundPixel === null) continue;
-      const aroundL = getLightness(aroundPixel);
+      const aroundL = getLuma(aroundPixel);
       const aroundH = getHue(aroundPixel);
       // isContrasting
       if (Math.abs(centerL - aroundL) > tolerance.maxL) {
@@ -163,7 +163,7 @@ const compareImages = (
         diffImage,
         offset,
         opts.ignoreColors
-          ? newGrayScalePixel(getLightness(pixel2), pixel2.a * transparency)
+          ? newGrayScalePixel(getLuma(pixel2), pixel2.a * transparency)
           : newPixel(pixel1.r, pixel1.g, pixel1.b, pixel1.a * transparency)
       );
       // ? diffOnly
@@ -179,7 +179,7 @@ const compareImages = (
       setPixel(
         diffImage,
         offset,
-        newGrayScalePixel(getLightness(pixel2), pixel2.a * transparency)
+        newGrayScalePixel(getLuma(pixel2), pixel2.a * transparency)
       );
       // ? diffOnly
     } else {

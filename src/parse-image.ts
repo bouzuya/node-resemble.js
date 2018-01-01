@@ -1,4 +1,4 @@
-import { getLightness } from './color';
+import { getLuma } from './color';
 import { Image } from './type/image';
 import { ParsedImage } from './type/parsed-image';
 import { getPixel } from './image';
@@ -17,7 +17,7 @@ const parseImage = (image: Image): ParsedImage => {
       const p = getPixel(image, offset);
       if (p === null) throw new Error();
       const { r, g, b } = p;
-      let l = getLightness({ r, g, b });
+      let l = getLuma({ r, g, b });
       pixelCount += 1;
       rTotal += r / 255 * 100;
       gTotal += g / 255 * 100;
