@@ -2,6 +2,7 @@ import * as assert from 'assert';
 import { Test, run, test } from 'beater';
 import { compareImages, loadImage } from '../src';
 import { Image } from '../src/type/image';
+import { tests as colorTests } from './color';
 
 var EXAMPLE_LARGE_IMAGE = 'example/LargeImage.png';
 var EXAMPLE_SMALL_IMAGE = 'example/SmallImage.png';
@@ -251,6 +252,7 @@ const testsRawMisMatchPercentage: Test[] = [
 
 const tests: Test[] = ([] as Test[])
   .concat(testsLargeImageThreashold)
-  .concat(testsRawMisMatchPercentage);
+  .concat(testsRawMisMatchPercentage)
+  .concat(colorTests);
 
 run(tests).catch(() => process.exit(1));

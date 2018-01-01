@@ -1,5 +1,7 @@
 import { RGB } from './type/rgb';
+import { U8 } from './type/u8';
 
+// 0 <= hue <= 1
 const getHue = ({ r, g, b }: RGB): number => {
   const r1 = r / 255;
   const g1 = g / 255;
@@ -16,8 +18,9 @@ const getHue = ({ r, g, b }: RGB): number => {
   }
 };
 
-const getLuma = ({ r, g, b }: RGB): number => {
-  return 0.3 * r + 0.59 * g + 0.11 * b;
+// almost equal Y' in ITU-R BT.601
+const getLuma = ({ r, g, b }: RGB): U8 => {
+  return Math.round(0.299 * r + 0.587 * g + 0.114 * b);
 };
 
 export { getHue, getLuma };
