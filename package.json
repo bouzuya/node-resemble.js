@@ -49,7 +49,7 @@
     "prepare": "npm-run-all -s \"clean\" \"build\"",
     "test": "node .tmp/test/index.js | tap-dot-b",
     "watch": "npm-run-all -p \"watch:build\" \"watch:test\"",
-    "watch:build": "npm run build -- --watch",
+    "watch:build": "npm run \"build:ts\" -- --watch",
     "watch:test": "watch \"npm run test\" .tmp --wait 1"
   }
 }
