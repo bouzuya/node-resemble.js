@@ -79,16 +79,6 @@ const newImage = (dimension: { width: number; height: number; }): Image => {
   };
 };
 
-const newImageBasedOn = (image: Image): Image => {
-  return new png.PNG({
-    width: image.width,
-    height: image.height,
-    deflateChunkSize: image.deflateChunkSize,
-    deflateLevel: image.deflateLevel,
-    deflateStrategy: image.deflateStrategy,
-  });
-};
-
 const newPixel = (r: U8, g: U8, b: U8, a: U8): Pixel => {
   return { r, g, b, a };
 };
@@ -132,7 +122,6 @@ export {
   getPixel,
   loadImage,
   newImage,
-  newImageBasedOn,
   newPixel,
   saveImageAsJPG,
   saveImageAsPNG,
